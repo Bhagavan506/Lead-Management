@@ -180,10 +180,10 @@ describe.skipIf(!hasDb)("admin insights (Phase 5)", () => {
     });
 
     it("GET /settings defaults to 2 and PUT changes what counts as stale everywhere", async () => {
-      expect((await get("admin", "/api/settings")).json()).toEqual({ staleDays: 2 });
+      expect((await get("admin", "/api/settings")).json()).toMatchObject({ staleDays: 2 });
       const base = (await get("admin", "/api/stats/overview")).json().stale as number;
       const put = await w.call("admin", "PUT", "/api/settings", { staleDays: 30 });
-      expect(put.json()).toEqual({ staleDays: 30 });
+      expect(put.json()).toMatchObject({ staleDays: 30 });
       expect((await get("admin", "/api/stats/overview")).json()).toMatchObject({
         staleDays: 30,
         stale: 0,
@@ -209,7 +209,7 @@ describe.skipIf(!hasDb)("admin insights (Phase 5)", () => {
 
     it("rejects unknown keys so a typo cannot silently do nothing", async () => {
       expect(
-        (await w.call("admin", "PUT", "/api/settings", { staleDays: 3, reminderTime: "09:00" }))
+        (await w.call("admin", "PUT", "/api/settings", { staleDays: 3, reminderTimeout: "09:00" }))
           .statusCode,
       ).toBe(422);
       expect((await get("admin", "/api/settings")).json().staleDays).toBe(2);

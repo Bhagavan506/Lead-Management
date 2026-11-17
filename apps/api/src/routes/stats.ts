@@ -8,10 +8,12 @@ import {
   teamStats,
 } from "../services/stats.js";
 import {
+  getReminderSettings,
   getStaleDays,
-  setStaleDays,
+  setSetting,
   STALE_DAYS_MAX,
   STALE_DAYS_MIN,
+  TIME_PATTERN,
 } from "../services/settings.js";
 
 const feedQuery = z.object({
@@ -20,8 +22,18 @@ const feedQuery = z.object({
 });
 
 const settingsBody = z
-  .object({ staleDays: z.number().int().min(STALE_DAYS_MIN).max(STALE_DAYS_MAX) })
-  .strict();
+  .object({
+    staleDays: z.number().int().min(STALE_DAYS_MIN).max(STALE_DAYS_MAX),
+    reminderEnabled: z.boolean(),
+    reminderTime: z.string().regex(TIME_PATTERN, "Use HH:MM, 24-hour"),
+  })
+  .partial()
+  .strict()
+  .refine((b) => Object.keys(b).length > 0, "Send at least one setting");
+
+async function readSettings(app: FastifyInstance) {
+  return { staleDays: await getStaleDays(app.db), ...(await getReminderSettings(app.db)) };
+}
 
 /** Admin insights. Every route is admin-only: employees must never see team-wide numbers. */
 export async function statsRoutes(app: FastifyInstance) {
@@ -37,10 +49,10 @@ export async function statsRoutes(app: FastifyInstance) {
     return activityFeed(app.db, q.page, q.pageSize);
   });
 
-  app.get("/settings", admin, async () => ({ staleDays: await getStaleDays(app.db) }));
+  app.get("/settings", admin, async () => readSettings(app));
   app.put("/settings", admin, async (req) => {
     const body = settingsBody.parse(req.body);
-    await setStaleDays(app.db, body.staleDays);
-    return { staleDays: await getStaleDays(app.db) };
+    for (const [key, value] of Object.entries(body)) await setSetting(app.db, key, value);
+    return readSettings(app);
   });
 }

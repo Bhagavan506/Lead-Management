@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "../app.js";
+import { MockProvider } from "../whatsapp/mock.js";
 import { loadConfig } from "../config.js";
 import { seed } from "../db/seed.js";
 import { createTestDb, type TestDb } from "./db.js";
@@ -10,6 +11,8 @@ export const TEST_SECRET = "test-secret-".padEnd(48, "x");
 export interface TestApp {
   app: FastifyInstance;
   t: TestDb;
+  /** The provider the app sends through: inspect `.sent` / set `.failWith`. */
+  provider: MockProvider;
   close: () => Promise<void>;
 }
 
@@ -25,15 +28,18 @@ export async function createTestApp(
     NODE_ENV: "test",
     DATABASE_URL: t.url,
     JWT_SECRET: TEST_SECRET,
+    SCHEDULER_ENABLED: "false",
     ...env,
   });
-  const app = buildApp(config, t.db);
+  const provider = new MockProvider();
+  const app = buildApp(config, t.db, { provider });
   // Registered (not called directly) so it runs after the auth plugin has decorated the app.
   if (configure) app.register(async (instance) => configure(instance));
   await app.ready();
   return {
     app,
     t,
+    provider,
     close: async () => {
       await app.close();
       await t.drop();

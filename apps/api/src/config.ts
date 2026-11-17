@@ -25,8 +25,36 @@ const schema = z
     DEFAULT_COUNTRY_CODE: z.string().length(2).default("IN"),
     APP_TIMEZONE: z.string().default("Asia/Kolkata"),
     WHATSAPP_PROVIDER: z.enum(["mock", "meta"]).default("mock"),
+    // Only used when WHATSAPP_PROVIDER=meta (see docs/WHATSAPP.md). Empty strings count as unset.
+    WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
+    WHATSAPP_ACCESS_TOKEN: z.string().optional(),
+    WHATSAPP_TEMPLATE_NAME: z.string().optional(),
+    WHATSAPP_TEMPLATE_LANG: z.string().default("en"),
+    WHATSAPP_APP_SECRET: z.string().optional(),
+    WHATSAPP_VERIFY_TOKEN: z.string().optional(),
+    WHATSAPP_API_BASE: z.string().url().default("https://graph.facebook.com/v21.0"),
+    // The in-process daily reminder job. Turn off when you run the job another way, and in tests.
+    SCHEDULER_ENABLED: z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((v) => v === "true"),
   })
   .superRefine((c, ctx) => {
+    if (c.WHATSAPP_PROVIDER === "meta") {
+      for (const k of [
+        "WHATSAPP_PHONE_NUMBER_ID",
+        "WHATSAPP_ACCESS_TOKEN",
+        "WHATSAPP_TEMPLATE_NAME",
+        "WHATSAPP_APP_SECRET",
+        "WHATSAPP_VERIFY_TOKEN",
+      ] as const)
+        if (!c[k]?.trim())
+          ctx.addIssue({
+            code: "custom",
+            path: [k],
+            message: "required when WHATSAPP_PROVIDER=meta",
+          });
+    }
     if (c.NODE_ENV !== "production") return;
     if (!c.COOKIE_SECURE)
       ctx.addIssue({
