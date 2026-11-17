@@ -116,3 +116,7 @@ Owner said "go" without answering the open questions, so defaults apply:
 - Tests: the DB test runs only when `DATABASE_URL` is set (skipped otherwise). Verified here against the embedded Postgres.
 - Still unverified: `docker compose up` (no Docker daemon in this sandbox).
 - Wherever this tracker or the owner's prompt says "Prisma", read "Drizzle".
+
+### T1.1 note
+
+Schema in `apps/api/src/db/schema.ts`; migrations `0000_init_schema` (generated) and `0001_activities_append_only` (custom trigger). Beyond the prompt's model (all agreed in the planning decisions): `users.must_change_password`, `activities.meta`, `leads.last_activity_at`, `reminder_log.kind` with a _partial_ unique index so only SCHEDULED rows are limited to one per employee per day. Enforced in the database, not just code: E.164 phone check, lost-reason-iff-LOST check, case-insensitive unique email, append-only activities (UPDATE/DELETE/TRUNCATE blocked by trigger). 10 tests run against a fresh database per run (`src/test/db.ts`).
