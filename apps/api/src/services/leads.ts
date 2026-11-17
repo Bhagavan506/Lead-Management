@@ -16,7 +16,7 @@ export interface LeadListQuery {
 }
 
 /** Stale = open AND latest activity older than staleDays (rule 9). */
-function staleExpr(staleDays: number, now: Date) {
+export function staleExpr(staleDays: number, now: Date) {
   const cutoff = new Date(now.getTime() - staleDays * 86_400_000).toISOString();
   return sql<boolean>`(${leads.status} not in ('WON','LOST') and ${leads.lastActivityAt} < ${cutoff}::timestamptz)`;
 }

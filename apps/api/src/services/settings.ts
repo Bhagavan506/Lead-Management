@@ -10,3 +10,13 @@ export async function getStaleDays(db: Db): Promise<number> {
   const v = row?.value;
   return typeof v === "number" && Number.isFinite(v) && v >= 1 ? v : DEFAULT_STALE_DAYS;
 }
+
+export const STALE_DAYS_MIN = 1;
+export const STALE_DAYS_MAX = 30;
+
+export async function setStaleDays(db: Db, days: number): Promise<void> {
+  await db
+    .insert(settings)
+    .values({ key: "staleDays", value: days })
+    .onConflictDoUpdate({ target: settings.key, set: { value: days } });
+}

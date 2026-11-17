@@ -23,7 +23,7 @@ export async function createWorld(env: Record<string, string> = {}) {
 
   const call = (
     as: string | null,
-    method: "GET" | "POST" | "PATCH",
+    method: "GET" | "POST" | "PATCH" | "PUT",
     url: string,
     payload?: unknown,
   ) =>
