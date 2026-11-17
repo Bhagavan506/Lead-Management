@@ -125,6 +125,10 @@ Schema in `apps/api/src/db/schema.ts`; migrations `0000_init_schema` (generated)
 
 `normalizePhone(input, defaultCountry)` in `apps/api/src/lib/phone.ts`, built on `libphonenumber-js` (full metadata, strict `isValid()`). Returns E.164 or null. Default country is a parameter fed from `DEFAULT_COUNTRY_CODE`. Covers spaces, dashes, dots, brackets, leading 0, `+` prefix, `00` prefix, other countries with explicit prefix, junk and non-strings. Note: strict validity means numbers that merely look plausible (e.g. wrong length or unassigned ranges) are rejected as invalid on upload.
 
+### T1.2 note
+
+`pnpm db:seed` (root) → `apps/api/src/db/seed.ts`. Admin `admin@demo.com` + Priya, Rohan, Anita (`@demo.com`), 9 leads and 20 history entries mirroring the prototype (follow-up dates relative to today in `APP_TIMEZONE`). Password comes from `SEED_PASSWORD` (not hardcoded; prototype's `admin123`/`1234` deliberately not used). Refuses to run when `NODE_ENV=production`. Idempotent: users by email, leads by phone, history only written when a lead has none. Prototype's note text "Wants pricing for 20 seats" is stored as "Note: …" to match how notes are written.
+
 ## Status at last checkpoint
 
-Done: 0.1, 0.2*, 0.3, 1.1, 3.1. Next: 1.2 (seed), 1.3 (login). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: 0.1, 0.2*, 0.3, 1.1, 3.1, 1.2. Next: 1.3 (login). \*`docker compose up` unverified (no Docker daemon in sandbox).
