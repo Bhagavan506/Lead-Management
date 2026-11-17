@@ -63,7 +63,7 @@ Rule: one task at a time, in order. A task is `done` only when typecheck, lint a
 | 10.3                                                                                             | Input validation and error-format review, request logging, dependency audit                                          | Review done, audit clean or documented                                          | done                           |         |
 | 10.4                                                                                             | Mobile QA pass on every screen at 360, 390, 768 px, with fixes                                                       | All screens checked and fixed                                                   | done                           |         |
 | 10.5                                                                                             | Production Dockerfiles, deployment notes, database backup plan (host-neutral by instruction)                         | Images build; notes and backup plan written                                     | done (docker build unverified) |         |
-| 10.6                                                                                             | README, environment variable docs, final Progress log with known gaps                                                | Docs complete                                                                   | todo                           |         |
+| 10.6                                                                                             | README, environment variable docs, final Progress log with known gaps                                                | Docs complete                                                                   | done                           |         |
 
 ## Progress log
 
@@ -366,6 +366,38 @@ All admin screens use the real API (no mock data in the app). Every screen has l
 - **NOT verified:** `docker build` of either image, `docker compose up`, the nginx config (`nginx -t` not available; the template substitution was only previewed), running behind a real TLS proxy, Node 20.
 - Not added: CSP header on the static site (the theme pre-paint script is inline; would need a hash), automated off-host copy (host-specific; documented), container resource limits.
 
+### T10.6 note (README, configuration docs, final log)
+
+- `README.md` at the root: what it does, the rules, stack, local run, tests, a table of every environment variable (checked against `config.ts`), layout, links to the three operations docs.
+- Placeholder sweep: no "built in a later task" panels, TODO/FIXME or lorem text remain in `apps/`, `deploy/` or `docs/` (the mobile spec also fails on such text on every screen). Earlier notes in this file that say "placeholder until 9.3" are history; they no longer apply.
+
 ## Status at last checkpoint
 
-Done: Phases 0–5 (backend for admin and employee work complete). Phase 6 (frontend foundation) done. Phases 7 and 8 done except the reminder panel (8.3, built in 9.3). Phase 9 done (Meta provider simulated only). Next: Phase 10. \*`docker compose up` unverified (no Docker daemon in sandbox).
+**All phases (0-10) are done.** Final counts: 498 API tests, 71 web tests, 82 Playwright checks (7 lifecycle + 75 mobile); lint, typecheck and format clean.
+
+### Final known gaps (nothing here is hidden elsewhere)
+
+**Unverified (could not be checked in the build sandbox)**
+
+- `docker build` of both images and `docker compose up` (no Docker daemon). Each step was reproduced separately, see T10.5.
+- The nginx config (`nginx -t` unavailable) and the stack behind real TLS.
+- The live WhatsApp Cloud API: the provider and webhook are tested only against `test/fake-meta.ts`. Template approval, real error codes, rate tiers and delivery callbacks are unknown until the go-live checklist in `docs/WHATSAPP.md` is done.
+- Node 20 (declared in `engines`, built and tested on Node 22).
+- A 5,000-row CSV upload under load (the limits exist: 5 MB body, row cap in the parser; speed was not measured at that size).
+- One web unit test (`signs out, calls the API, and returns to login`) failed once in about 35 runs earlier and never again in 100+ later runs across the suite and Playwright; cause unknown.
+
+**Design limits (chosen or not specified, documented)**
+
+- No password-reset or recovery flow; an admin cannot reset a password (deactivate and re-add instead).
+- Sessions are stateless JWTs: sign-out and password change do not revoke a token that was already copied; it lives until `JWT_EXPIRES_IN`. Deactivation does block a user at once.
+- Login rate limits are in memory and per instance; run one API instance.
+- `SameSite=Strict` needs the web app and API on one site (the supplied nginx setup does this).
+- Reminders: if the server is down for the whole day after the send time, that day's scheduled reminder is skipped (a manual "Send now" covers it). A failed send is not retried by the daily job. Meta's failure reason is only in server logs (no column; no data-model change was agreed).
+- Stacked mobile tables drop table semantics for some screen readers (no ARIA roles added).
+- The main JavaScript chunk is ~530 kB (160 kB gzip), almost all React, the router and TanStack Query; screens are lazy-loaded. Vite's 500 kB warning remains.
+- Two dev-only dependency advisories (`picomatch` via `typescript-eslint`, an old `esbuild` inside `drizzle-kit`); production dependencies audit clean. Re-run `pnpm audit` at release.
+- No CSP on the static site, no container resource limits, no automated off-host backup copy (host-specific).
+
+**Agreed deviations from the original prompt**
+
+Drizzle instead of Prisma (approved after Prisma was blocked); no Redis/BullMQ (in-process scheduler, idempotency by a database unique index, in-memory rate limits); `APP_TIMEZONE` and `DEFAULT_COUNTRY_CODE` settings; the reminder job writes the log, not the provider; calls on Won/Lost leads set no follow-up; extra endpoints `GET /api/leads?followUp=` and `GET /api/leads/summary`; a first-admin command and production build (10.5); hosting kept host-neutral because the choice was delegated.
