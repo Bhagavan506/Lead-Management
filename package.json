@@ -26,9 +26,6 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
-      "prisma",
-      "@prisma/client",
-      "@prisma/engines",
       "@embedded-postgres/linux-x64",
       "argon2"
     ]
