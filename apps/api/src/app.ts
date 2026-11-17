@@ -12,6 +12,7 @@ import { leadRoutes } from "./routes/leads.js";
 import { statsRoutes } from "./routes/stats.js";
 import { reminderRoutes } from "./routes/reminders.js";
 import { userRoutes } from "./routes/users.js";
+import { webhookRoutes } from "./routes/webhooks.js";
 import { startScheduler } from "./scheduler.js";
 import { createProvider } from "./whatsapp/index.js";
 import type { WhatsAppProvider } from "./whatsapp/provider.js";
@@ -79,6 +80,7 @@ export function buildApp(
   app.register(leadRoutes, { prefix: "/api/leads" });
   app.register(statsRoutes, { prefix: "/api" });
   app.register(reminderRoutes, { prefix: "/api/reminders" });
+  app.register(webhookRoutes, { prefix: "/webhooks" });
 
   if (config.SCHEDULER_ENABLED) {
     app.addHook("onReady", async () => {

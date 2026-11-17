@@ -3,8 +3,11 @@ import { leads, users } from "../db/schema.js";
 import { createTestApp, loginCookie, type TestApp } from "./app.js";
 
 /** A seeded app plus logged-in cookies, user ids and lead ids by name, for route tests. */
-export async function createWorld(env: Record<string, string> = {}) {
-  const ctx: TestApp = await createTestApp(env);
+export async function createWorld(
+  env: Record<string, string> = {},
+  opts: { realProvider?: boolean } = {},
+) {
+  const ctx: TestApp = await createTestApp(env, undefined, opts);
   const cookies: Record<string, string> = {};
   const uid: Record<string, string> = {};
   const lid: Record<string, string> = {};
