@@ -8,6 +8,8 @@ import { AllLeadsPage } from "./pages/admin/AllLeads";
 import { OverviewPage } from "./pages/admin/Overview";
 import { TeamPage } from "./pages/admin/Team";
 import { UploadPage } from "./pages/admin/Upload";
+import { FollowUpsPage } from "./pages/employee/FollowUps";
+import { MyLeadsPage } from "./pages/employee/MyLeads";
 import { Placeholder } from "./pages/Placeholder";
 
 export function App() {
@@ -32,8 +34,8 @@ export function App() {
       <Route element={<RequireRole role="EMPLOYEE" />}>
         <Route path="/app" element={<Shell tabs={EMPLOYEE_TABS} />}>
           <Route index element={<Navigate to="leads" replace />} />
-          <Route path="leads" element={<Placeholder title="My leads" />} />
-          <Route path="follow-ups" element={<Placeholder title="Follow-ups" />} />
+          <Route path="leads" element={<MyLeadsPage />} />
+          <Route path="follow-ups" element={<FollowUpsPage />} />
         </Route>
       </Route>
 

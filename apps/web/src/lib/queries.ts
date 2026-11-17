@@ -6,6 +6,7 @@ export interface LeadFilters {
   owner?: string;
   status?: string;
   stale?: boolean;
+  followUp?: "due" | "scheduled";
   search?: string;
   page: number;
   pageSize?: number;
@@ -36,3 +37,13 @@ export const useLeadDetail = (id: string | null) =>
 
 export const useTeam = () =>
   useQuery({ queryKey: ["team-users"], queryFn: () => get<{ users: TeamUser[] }>("/api/users") });
+
+export interface MySummary {
+  total: number;
+  notContacted: number;
+  followUpsDue: number;
+  won: number;
+  today: string;
+}
+export const useSummary = () =>
+  useQuery({ queryKey: ["summary"], queryFn: () => get<MySummary>("/api/leads/summary") });

@@ -24,7 +24,7 @@ describe("route protection (6.2)", () => {
   it("sends an employee who types an admin URL to their own screen", async () => {
     mockApi(me(PRIYA));
     renderApp("/admin/team");
-    expect(await screen.findByRole("heading", { name: "My leads" })).toBeInTheDocument();
+    expect(await screen.findByText(/You only see leads assigned to you/)).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Team performance/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Upload leads" })).not.toBeInTheDocument();
   });
@@ -51,7 +51,7 @@ describe("route protection (6.2)", () => {
     unmount();
     mockApi(me(PRIYA));
     renderApp("/app/leads");
-    await screen.findByRole("heading", { name: "My leads" });
+    await screen.findByText(/You only see leads assigned to you/);
     expect(screen.getAllByRole("link").map((l) => l.textContent)).toEqual([
       "My leads",
       "Follow-ups",
@@ -67,7 +67,7 @@ describe("route protection (6.2)", () => {
   it("unknown URLs fall back to the user's home", async () => {
     mockApi(me(PRIYA));
     renderApp("/nope/nothing");
-    expect(await screen.findByRole("heading", { name: "My leads" })).toBeInTheDocument();
+    expect(await screen.findByText(/You only see leads assigned to you/)).toBeInTheDocument();
   });
 
   it("shows a retryable error, not the login page, when the server cannot be reached", async () => {
@@ -93,7 +93,7 @@ describe("login", () => {
     await userEvent.type(await screen.findByLabelText("Email"), "  priya@demo.com ");
     await userEvent.type(screen.getByLabelText("Password"), "secret-pass");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByRole("heading", { name: "My leads" })).toBeInTheDocument();
+    expect(await screen.findByText(/You only see leads assigned to you/)).toBeInTheDocument();
     expect(calls.find((c) => c.path === "/api/auth/login")?.body).toEqual({
       email: "priya@demo.com",
       password: "secret-pass",
@@ -163,7 +163,7 @@ describe("login", () => {
     await userEvent.type(screen.getByLabelText(/New password \(/), "brand-new-pass-1");
     await userEvent.type(screen.getByLabelText("New password again"), "brand-new-pass-1");
     await userEvent.click(screen.getByRole("button", { name: "Save password" }));
-    expect(await screen.findByRole("heading", { name: "My leads" })).toBeInTheDocument();
+    expect(await screen.findByText(/You only see leads assigned to you/)).toBeInTheDocument();
   });
 
   it("checks the new password before calling the API", async () => {
@@ -214,7 +214,7 @@ describe("shell (6.3)", () => {
     renderApp("/app/leads");
     await userEvent.click(await screen.findByRole("button", { name: "Sign out" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not sign out");
-    expect(screen.getByRole("heading", { name: "My leads" })).toBeInTheDocument();
+    expect(screen.getByText(/You only see leads assigned to you/)).toBeInTheDocument();
   });
 
   it("cycles Auto → Light → Dark → Auto, applies it to the page and remembers it", async () => {

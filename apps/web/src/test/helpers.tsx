@@ -28,7 +28,9 @@ type Handler = (req: {
 }) => { status?: number; json?: unknown; headers?: Record<string, string> } | undefined;
 
 /** Replaces fetch with routes keyed "METHOD /path". Unmatched calls fail the test loudly. */
-export function mockApi(routes: Record<string, Handler>) {
+export function mockApi(given: Record<string, Handler>) {
+  // Quiet empty answers for the list screens, so a test only spells out what it cares about.
+  const routes = { ...defaults(), ...given };
   const calls: { method: string; path: string; body: unknown }[] = [];
   const fn = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = String(input);
@@ -74,3 +76,24 @@ export const emptyOverview = {
   "GET /api/stats/stale": () => ({ json: { staleDays: 2, total: 0, leads: [] } }),
   "GET /api/stats/lost-reasons": () => ({ json: { total: 0, reasons: [] } }),
 };
+
+export const emptySummary = {
+  total: 0,
+  notContacted: 0,
+  followUpsDue: 0,
+  won: 0,
+  today: "2031-01-10",
+};
+export const emptyEmployeeData = {
+  "GET /api/leads/summary": () => ({ json: emptySummary }),
+  "GET /api/leads?page=1&pageSize=50": () => ({
+    json: { leads: [], page: 1, pageSize: 50, total: 0, totalPages: 1, staleDays: 2 },
+  }),
+  "GET /api/leads?followUp=scheduled&page=1&pageSize=100": () => ({
+    json: { leads: [], page: 1, pageSize: 100, total: 0, totalPages: 1, staleDays: 2 },
+  }),
+};
+
+function defaults(): Record<string, Handler> {
+  return { ...emptyOverview, ...emptyEmployeeData };
+}
