@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ADMIN, mockApi, PRIYA, renderApp, signedOut } from "./test/helpers";
+import { ADMIN, emptyOverview, mockApi, PRIYA, renderApp, signedOut } from "./test/helpers";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -9,7 +9,10 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
 });
 
-const me = (user: unknown) => ({ "GET /api/auth/me": () => ({ json: { user } }) });
+const me = (user: unknown) => ({
+  "GET /api/auth/me": () => ({ json: { user } }),
+  ...emptyOverview,
+});
 
 describe("route protection (6.2)", () => {
   it("sends a signed-out visitor to the login page", async () => {
@@ -22,21 +25,21 @@ describe("route protection (6.2)", () => {
     mockApi(me(PRIYA));
     renderApp("/admin/team");
     expect(await screen.findByRole("heading", { name: "My leads" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Team" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /Team performance/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Upload leads" })).not.toBeInTheDocument();
   });
 
   it("sends an admin who types an employee URL to the admin overview", async () => {
     mockApi(me(ADMIN));
     renderApp("/app/leads");
-    expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Team performance/ })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "My leads" })).not.toBeInTheDocument();
   });
 
   it("shows each role only its own tabs", async () => {
     mockApi(me(ADMIN));
     const { unmount } = renderApp("/admin/overview");
-    await screen.findByRole("heading", { name: "Overview" });
+    await screen.findByRole("heading", { name: /Team performance/ });
     expect(screen.getAllByRole("link").map((l) => l.textContent)).toEqual([
       "Overview",
       "All leads",
@@ -98,15 +101,19 @@ describe("login", () => {
   });
 
   it("returns to the page they were headed for if their role allows it", async () => {
+    let signedIn = false;
     mockApi({
-      "GET /api/auth/me": signedOut,
-      "POST /api/auth/login": () => ({ json: { user: ADMIN } }),
+      "GET /api/auth/me": () => (signedIn ? { json: { user: ADMIN } } : signedOut()),
+      "POST /api/auth/login": () => ((signedIn = true), { json: { user: ADMIN } }),
+      "GET /api/activity?page=1&pageSize=40": () => ({
+        json: { items: [], page: 1, totalPages: 1, total: 0 },
+      }),
     });
     renderApp("/admin/activity");
     await userEvent.type(await screen.findByLabelText("Email"), "admin@demo.com");
     await userEvent.type(screen.getByLabelText("Password"), "x");
     await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByRole("heading", { name: "Activity" })).toBeInTheDocument();
+    expect(await screen.findByText("No activity yet.")).toBeInTheDocument();
   });
 
   it("does not reveal which part was wrong, clears the password, and stays on the form", async () => {
@@ -179,7 +186,7 @@ describe("login", () => {
   it("redirects a signed-in user away from the login page", async () => {
     mockApi(me(ADMIN));
     renderApp("/login");
-    expect(await screen.findByRole("heading", { name: "Overview" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Team performance/ })).toBeInTheDocument();
   });
 });
 

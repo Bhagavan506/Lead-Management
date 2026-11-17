@@ -3,6 +3,11 @@ import { RedirectHome, RequireRole } from "./components/Guards";
 import { ADMIN_TABS, EMPLOYEE_TABS, Shell } from "./components/Shell";
 import { ChangePasswordPage } from "./pages/ChangePassword";
 import { LoginPage } from "./pages/Login";
+import { ActivityPage } from "./pages/admin/Activity";
+import { AllLeadsPage } from "./pages/admin/AllLeads";
+import { OverviewPage } from "./pages/admin/Overview";
+import { TeamPage } from "./pages/admin/Team";
+import { UploadPage } from "./pages/admin/Upload";
 import { Placeholder } from "./pages/Placeholder";
 
 export function App() {
@@ -15,12 +20,12 @@ export function App() {
       <Route element={<RequireRole role="ADMIN" />}>
         <Route path="/admin" element={<Shell tabs={ADMIN_TABS} />}>
           <Route index element={<Navigate to="overview" replace />} />
-          <Route path="overview" element={<Placeholder title="Overview" />} />
-          <Route path="leads" element={<Placeholder title="All leads" />} />
-          <Route path="upload" element={<Placeholder title="Upload leads" />} />
-          <Route path="team" element={<Placeholder title="Team" />} />
+          <Route path="overview" element={<OverviewPage />} />
+          <Route path="leads" element={<AllLeadsPage />} />
+          <Route path="upload" element={<UploadPage />} />
+          <Route path="team" element={<TeamPage />} />
           <Route path="reminders" element={<Placeholder title="Reminders" />} />
-          <Route path="activity" element={<Placeholder title="Activity" />} />
+          <Route path="activity" element={<ActivityPage />} />
         </Route>
       </Route>
 

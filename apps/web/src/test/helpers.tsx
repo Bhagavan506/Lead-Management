@@ -64,3 +64,13 @@ export function renderApp(path: string) {
     </QueryClientProvider>,
   );
 }
+
+/** Empty-but-valid answers for everything the admin Overview loads. */
+export const emptyOverview = {
+  "GET /api/stats/overview": () => ({
+    json: { total: 0, unassigned: 0, open: 0, won: 0, lost: 0, overdue: 0, stale: 0, staleDays: 2 },
+  }),
+  "GET /api/stats/team": () => ({ json: { employees: [] } }),
+  "GET /api/stats/stale": () => ({ json: { staleDays: 2, total: 0, leads: [] } }),
+  "GET /api/stats/lost-reasons": () => ({ json: { total: 0, reasons: [] } }),
+};
