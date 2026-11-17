@@ -177,6 +177,10 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 - **Open point for 8.3:** the prototype's Follow-ups tab shows only leads with a follow-up date, and "My leads" a due count. With server-side paging the UI may need a `followUp=due|set` filter. It is not in the spec'd filter list, so I have not added it; will raise at 8.3 rather than invent it now.
 - Sandbox note: the embedded Postgres stops between sessions; restart with `node scripts/dev-postgres.mjs /tmp/leadbook-pg`.
 
+### T3.3 note
+
+`GET /api/leads/:id` (any signed-in role) returns `{ lead, timeline, timelineTruncated, staleDays }`. The lookup is `WHERE id = :id AND <leadScope>` in one query, never fetch-then-check, so another employee's lead and a nonexistent id return the **same 404 body** (tested for equality, and the body contains no name/owner). Unassigned leads are 404 for employees. Timeline is newest first with actor names; capped at 500 entries (flag `timelineTruncated`). Activity `meta` is deliberately not returned (it can hold other employees' ids). An IDOR sweep checks every employee × every lead: 200 iff owner, else 404. Mutation-checked (4 tests fail without the scope). 9 tests.
+
 ## Phase 2 summary (Team management) — complete
 
 **Done:** create/list employees with a one-time temporary password, deactivate/reactivate with race-free last-employee protection and full rollback, forced first-login password change. 102 tests total (24 new in this phase), all against a real Postgres. Mutation-checked: the row lock, the forced-change gate.
@@ -191,4 +195,4 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 ## Status at last checkpoint
 
-Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.3 (lead detail with timeline). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.4 (CSV upload). \*`docker compose up` unverified (no Docker daemon in sandbox).

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { SessionUser } from "../plugins/auth.js";
-import { listLeads } from "../services/leads.js";
+import { getLeadDetail, listLeads } from "../services/leads.js";
 
 const listQuery = z.object({
   owner: z.union([z.literal("none"), z.string().uuid()]).optional(),
@@ -15,10 +15,17 @@ const listQuery = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
 });
 
+const idParams = z.object({ id: z.string().uuid() });
+
 export async function leadRoutes(app: FastifyInstance) {
   // Any signed-in role; what they get back is decided by the query-layer scope, not by this guard.
   app.get("/", { preHandler: app.guard() }, async (req) => {
     const q = listQuery.parse(req.query);
     return listLeads(app.db, req.user as SessionUser, q);
+  });
+
+  app.get("/:id", { preHandler: app.guard() }, async (req) => {
+    const { id } = idParams.parse(req.params);
+    return getLeadDetail(app.db, req.user as SessionUser, id);
   });
 }

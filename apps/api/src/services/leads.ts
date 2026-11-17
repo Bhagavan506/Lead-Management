@@ -1,8 +1,9 @@
-import { and, count, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { leads, users } from "../db/schema.js";
+import { activities, leads, users } from "../db/schema.js";
 import type { SessionUser } from "../plugins/auth.js";
 import { leadScope } from "./lead-access.js";
+import { notFound } from "../errors.js";
 import { getStaleDays } from "./settings.js";
 
 export interface LeadListQuery {
@@ -14,6 +15,33 @@ export interface LeadListQuery {
   pageSize: number;
 }
 
+/** Stale = open AND latest activity older than staleDays (rule 9). */
+function staleExpr(staleDays: number, now: Date) {
+  const cutoff = new Date(now.getTime() - staleDays * 86_400_000).toISOString();
+  return sql<boolean>`(${leads.status} not in ('WON','LOST') and ${leads.lastActivityAt} < ${cutoff}::timestamptz)`;
+}
+
+function leadColumns(isStale: ReturnType<typeof staleExpr>) {
+  return {
+    id: leads.id,
+    name: leads.name,
+    company: leads.company,
+    phone: leads.phone,
+    source: leads.source,
+    status: leads.status,
+    lostReason: leads.lostReason,
+    followUpDate: leads.followUpDate,
+    ownerId: leads.ownerId,
+    ownerName: users.name,
+    lastActivityAt: leads.lastActivityAt,
+    lastActivityText: sql<
+      string | null
+    >`(select a.text from activities a where a.lead_id = ${leads.id} order by a.created_at desc, a.id desc limit 1)`,
+    isStale,
+    createdAt: leads.createdAt,
+  };
+}
+
 const escapeLike = (s: string) => s.replace(/[\\%_]/g, "\\$&");
 
 export async function listLeads(
@@ -23,9 +51,7 @@ export async function listLeads(
   now: Date = new Date(),
 ) {
   const staleDays = await getStaleDays(db);
-  const cutoff = new Date(now.getTime() - staleDays * 86_400_000).toISOString();
-  // Stale = open AND latest activity older than staleDays (rule 9).
-  const isStale = sql<boolean>`(${leads.status} not in ('WON','LOST') and ${leads.lastActivityAt} < ${cutoff}::timestamptz)`;
+  const isStale = staleExpr(staleDays, now);
 
   const conditions = [leadScope(user)];
   if (q.owner === "none") conditions.push(isNull(leads.ownerId));
@@ -58,24 +84,7 @@ export async function listLeads(
   const total = totalRow?.n ?? 0;
 
   const rows = await db
-    .select({
-      id: leads.id,
-      name: leads.name,
-      company: leads.company,
-      phone: leads.phone,
-      source: leads.source,
-      status: leads.status,
-      lostReason: leads.lostReason,
-      followUpDate: leads.followUpDate,
-      ownerId: leads.ownerId,
-      ownerName: users.name,
-      lastActivityAt: leads.lastActivityAt,
-      lastActivityText: sql<
-        string | null
-      >`(select a.text from activities a where a.lead_id = ${leads.id} order by a.created_at desc, a.id desc limit 1)`,
-      isStale,
-      createdAt: leads.createdAt,
-    })
+    .select(leadColumns(isStale))
     .from(leads)
     .leftJoin(users, eq(users.id, leads.ownerId))
     .where(where)
@@ -89,6 +98,49 @@ export async function listLeads(
     pageSize: q.pageSize,
     total,
     totalPages: Math.max(1, Math.ceil(total / q.pageSize)),
+    staleDays,
+  };
+}
+
+const TIMELINE_LIMIT = 500;
+
+/**
+ * One lead with its history. The id AND the role scope are in the same WHERE clause, so a lead
+ * that belongs to someone else is indistinguishable from one that does not exist (404 either way).
+ */
+export async function getLeadDetail(
+  db: Db,
+  user: Pick<SessionUser, "id" | "role">,
+  id: string,
+  now: Date = new Date(),
+) {
+  const staleDays = await getStaleDays(db);
+  const [lead] = await db
+    .select(leadColumns(staleExpr(staleDays, now)))
+    .from(leads)
+    .leftJoin(users, eq(users.id, leads.ownerId))
+    .where(and(eq(leads.id, id), leadScope(user)));
+  if (!lead) throw notFound("Lead not found");
+
+  const rows = await db
+    .select({
+      id: activities.id,
+      type: activities.type,
+      text: activities.text,
+      actorId: activities.actorId,
+      actorName: users.name,
+      createdAt: activities.createdAt,
+    })
+    .from(activities)
+    .innerJoin(users, eq(users.id, activities.actorId))
+    .where(eq(activities.leadId, lead.id))
+    .orderBy(desc(activities.createdAt), desc(activities.id))
+    .limit(TIMELINE_LIMIT + 1);
+
+  return {
+    lead,
+    timeline: rows.slice(0, TIMELINE_LIMIT),
+    timelineTruncated: rows.length > TIMELINE_LIMIT,
     staleDays,
   };
 }
