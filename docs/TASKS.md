@@ -72,3 +72,17 @@ Rule: one task at a time, in order. A task is `done` only when typecheck, lint a
 - `reference/leadbook-flow-demo.html` is **not yet in the repo** — required before Task 1.2 (seed data "matching the prototype") and Phase 7–8 (screens and wording).
 - Open questions raised with the owner before Task 0.1 (see planning reply): seed vs phone-normalization ordering, missing `mustChangePassword` field, stale-lead definition, reminder timezone and retry semantics, upload assignment mode, Redis necessity, 403 vs 404 for admins on lead work.
 - Waiting for "go".
+
+### Prototype review — 2026-11-17
+Prototype added at `reference/leadbook-flow-demo.html`. Resolved by it (treated as spec):
+- **Upload assignment modes:** keep in pool / split evenly (least-loaded) / assign all to one employee. `POST /leads/upload` gets a `mode` field (affects 3.4).
+- **Status changes:** any status → any status. Leaving Lost clears the reason. Won and Lost clear the follow-up. "Other" lost reason has no free text.
+- **Call on New lead** writes two activities ("Call: X", "Status: New → Contacted"); No answer/Busy also writes "Follow-up set to DATE".
+- **Stale** = open lead whose newest activity of *any* kind (incl. admin upload/assign, contact taps) is older than `staleDays`.
+- **Activity wording** to copy verbatim: "Uploaded by Admin", "Assigned to X", "Moved back to unassigned pool", "Status: A → B", "Status: A → Lost (Reason)", "Call: Outcome", "Follow-up set to DATE|none", "Note: text", "Call started from app", "WhatsApp chat opened".
+- **Team table:** Assigned = all owned; Not yet contacted = New; Worked = not New; Last activity = latest by that employee.
+- **Reminder message format** and send-time options (08:00 / 09:00 / 10:00); per-employee "Send now" plus "Send all due now".
+- **Seed:** Admin + Priya Sharma, Rohan Verma, Anita Das (+91 numbers); 9 leads, 3 unassigned; follow-up dates relative to today → `DEFAULT_COUNTRY_CODE=IN`.
+- Prototype-only, not carried over: "Reset demo", quick-fill demo logins, auto-generated `@demo.com` emails, shared password `1234`.
+
+Still open (asked of owner): manual "Send now" vs one-per-day uniqueness; multi-line message vs Meta template limits; employee email entry; schema additions in 1.1; Redis; `APP_TIMEZONE`.

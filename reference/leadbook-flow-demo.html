@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Leadbook flow demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap">
+<style>
+:root{--bg:#f2f4f7;--sf:#fff;--ink:#1a2430;--mu:#667487;--ln:#dde2e9;--ac:#2f5bea;--ac2:#e8eefe;--ok:#1f8a5b;--bad:#c0392b;--on:#fff;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f151c;--sf:#18212b;--ink:#e7ecf2;--mu:#93a1b2;--ln:#2a3644;--ac:#7c9bff;--ac2:#1f2b4a;--ok:#43c08a;--bad:#ef7b6d;--on:#0f151c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f151c;--sf:#18212b;--ink:#e7ecf2;--mu:#93a1b2;--ln:#2a3644;--ac:#7c9bff;--ac2:#1f2b4a;--ok:#43c08a;--bad:#ef7b6d;--on:#0f151c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif}
+h1{font-size:19px;font-weight:800;margin:0;letter-spacing:-.02em}h3{margin:0 0 8px;font-size:14px}h4{margin:16px 0 4px}
+.mu,small{color:var(--mu)}
+header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 18px;background:var(--sf);border-bottom:1px solid var(--ln)}
+.role{font-weight:800;padding:2px 9px;border-radius:6px;background:var(--ac2);color:var(--ac)}
+.sp{flex:1}
+nav{display:flex;gap:2px;background:var(--bg);padding:3px;border-radius:9px;flex-wrap:wrap}
+nav button{border:0;background:none;color:var(--mu);padding:6px 12px;border-radius:7px;font:inherit;font-weight:700;cursor:pointer}
+nav button.on{background:var(--sf);color:var(--ink);box-shadow:0 0 0 1px var(--ln)}
+input,select,button,textarea{font:inherit;color:var(--ink)}
+input,select,textarea{background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:7px 10px;min-width:0}
+:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.btn{border:1px solid var(--ln);background:var(--sf);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:700}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:var(--on)}
+main{padding:18px;max-width:1100px;margin:0 auto}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:16px}
+.flow div{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:10px 12px}.flow b{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.panel{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:14px;margin-bottom:14px}
+.big{font-size:28px;font-weight:800;letter-spacing:-.02em}
+.wrap{overflow-x:auto;background:var(--sf);border:1px solid var(--ln);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--ln);vertical-align:middle}
+th{color:var(--mu);font-size:13px}
+tr.row{cursor:pointer}tr.row:hover{background:var(--bg)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.warn{color:var(--bad);font-weight:700}.ok{color:var(--ok);font-weight:700}
+.tag{display:inline-block;font-size:12px;background:var(--ac2);color:var(--ac);border-radius:5px;padding:1px 7px;font-weight:700}
+.empty{color:var(--mu);padding:22px;text-align:center}
+.lg{max-width:420px;margin:8vh auto;padding:0 16px}.lg .panel{display:grid;gap:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:12px;cursor:pointer}.card:hover{border-color:var(--ac)}
+.ov{position:fixed;inset:0;background:rgba(10,15,20,.5);display:flex;justify-content:flex-end;z-index:5}
+.dr{background:var(--sf);width:min(460px,100%);height:100%;overflow:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 18px calc(18px + env(safe-area-inset-bottom,0px))}
+.tl{font-size:13px;padding:6px 0;border-bottom:1px solid var(--ln)}.tl small{display:block}
+.add{display:flex;gap:6px;margin:8px 0}.add input{flex:1}
+.f{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}.f label{display:grid;gap:3px;color:var(--mu);font-weight:700;font-size:12px}.f select,.f input{width:100%;color:var(--ink);font-weight:400;font-size:14px}
+textarea{width:100%;min-height:110px}
+.wa{background:#d9fdd3;color:#111;border-radius:10px;padding:8px 10px;white-space:pre-line;max-width:340px;font-size:13px;margin-top:8px}a.btn{text-decoration:none;color:var(--ink);display:inline-block}.btn:disabled{opacity:.5;cursor:default}@media(max-width:700px){body{font-size:15px}input,select,textarea{font-size:16px}.btn,nav button,select,input:not([type=checkbox]){min-height:42px}header{padding:10px 12px;gap:8px}header .sp{display:none}header>.btn{order:4}nav{order:5;width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}nav button{white-space:nowrap;flex:0 0 auto}main{padding:12px}.grid{grid-template-columns:1fr 1fr;gap:8px}.panel{padding:12px}.big{font-size:24px}.flow{grid-template-columns:1fr}.bar>*{flex:1 1 140px}.bar .btn{flex:1 1 auto}.chips .btn{flex:1 1 auto;text-align:center}.cards{grid-template-columns:1fr}.f{grid-template-columns:1fr}.add{flex-wrap:wrap}.add input{flex:1 1 140px}.wa{max-width:100%}.lg{margin:4vh auto}.wrap{background:none;border:0;overflow:visible}table,tbody{display:block;min-width:0;width:100%}tr{display:block;background:var(--sf);border:1px solid var(--ln);border-radius:10px;padding:6px 12px;margin-bottom:8px}table tr:first-child{display:none}td{display:block;border:0;padding:4px 0;text-align:left}td::before{content:attr(data-label);display:block;color:var(--mu);font-size:12px;font-weight:700}td:first-child::before,td:not([data-label])::before{content:none}td select{width:100%}table.lt tr{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:start;padding:10px 12px;margin-bottom:6px}table.lt tr:first-child{display:none}table.lt td{padding:0}table.lt td:nth-child(1){grid-column:1}table.lt td:nth-child(2){grid-column:2;grid-row:1;text-align:right;font-weight:700}table.lt td:nth-child(3){grid-column:1/-1;font-size:13px;color:var(--mu)}table.lt td:nth-child(3).warn{color:var(--bad)}table.lt td:nth-child(3)::before{content:'Follow-up: ';display:inline;font-size:13px}table.lt td:nth-child(4){display:none}table.lt td:nth-child(5){grid-column:1/-1;margin-top:6px}}
+</style></head><body>
+<div id="app"></div><div id="modal"></div>
+<script>
+const K='lb.flowdemo.v2',ST=['New','Contacted','Qualified','Proposal','Won','Lost'],OUT=['Answered','No answer','Busy','Wrong number'];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const day=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const today=()=>day(0);
+let D,S={me:null,tab:'ov',emp:'',st:'',open:null,msg:'',err:''};
+const U=id=>D.users.find(u=>u.id===id);
+const emps=()=>D.users.filter(u=>u.role==='emp'&&u.on!==false);
+const nm=id=>id?U(id).name:'Unassigned';
+const dig=s=>String(s||'').replace(/\D/g,'').slice(-10);
+const ago=t=>{const m=Math.round((Date.now()-t)/6e4);return m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'};
+function seed(){const H=3.6e6;
+ const mk=(name,company,phone,source,owner,st,fu,acts)=>({id:uid(),name,company,phone,source,owner,st,fu,act:[...acts.map(([h,by,text])=>({t:Date.now()-h*H,by,text})),{t:Date.now()-72*H,by:'a',text:'Uploaded by Admin'}].sort((a,b)=>b.t-a.t)});
+ return{cfg:{stale:2,wa:true,when:'09:00'},rem:[],users:[{id:'a',name:'Admin',role:'admin',email:'admin@demo.com',pw:'admin123'},{id:'e1',name:'Priya Sharma',role:'emp',email:'priya@demo.com',pw:'1234',ph:'+91 98200 00001'},{id:'e2',name:'Rohan Verma',role:'emp',email:'rohan@demo.com',pw:'1234',ph:'+91 98200 00002'},{id:'e3',name:'Anita Das',role:'emp',email:'anita@demo.com',pw:'1234',ph:'+91 98200 00003'}],
+ leads:[mk('Aarav Mehta','Northwind Traders','9810000001','Website','e1','Qualified',day(1),[[50,'e1','Call: Answered'],[49,'e1','Status: New → Contacted'],[20,'e1','Status: Contacted → Qualified'],[20,'e1','Wants pricing for 20 seats']]),
+ mk('Sara Khan','Brightpath Schools','9810000002','Referral','e1','Contacted',day(-1),[[30,'e1','Call: No answer']]),
+ mk('Dev Patel','Orbit Logistics','9810000003','Event','e2','Proposal',day(2),[[40,'e2','Call: Answered'],[10,'e2','Status: Qualified → Proposal']]),
+ mk('Meera Iyer','Lumen Clinics','9810000004','Website','e2','New',day(0),[]),
+ mk('Kabir Singh','Zenith Foods','9810000005','Cold outreach','e3','Won','',[[60,'e3','Call: Answered'],[5,'e3','Status: Proposal → Won']]),
+ {lost:'Wrong contact',...mk('Nisha Rao','Pixel Forge','9810000006','Social','e3','Lost','',[[24,'e3','Call: Wrong number'],[23,'e3','Status: Contacted → Lost (Wrong contact)']])},
+ mk('Imran Ali','Delta Print','9810000007','Website',null,'New','',[]),
+ mk('Tara Nair','Greenleaf Cafe','9810000008','Referral',null,'New','',[]),
+ mk('Vikram Joshi','Atlas Steel','9810000009','Event',null,'New','',[])]}}
+function load(){try{const r=localStorage.getItem(K);D=r?JSON.parse(r):seed()}catch(e){D=seed()}}
+function save(){try{localStorage.setItem(K,JSON.stringify(D))}catch(e){}}
+function act(l,by,text){l.act.unshift({t:Date.now(),by,text})}
+const over=l=>l.fu&&l.fu<today()&&!['Won','Lost'].includes(l.st);
+function leastLoaded(){const c=e=>D.leads.filter(l=>l.owner===e.id&&!['Won','Lost'].includes(l.st)).length;return emps().sort((a,b)=>c(a)-c(b))[0]}
+function assign(l,eid,by){if(l.owner===eid)return;l.owner=eid||null;act(l,by,eid?'Assigned to '+nm(eid):'Moved back to unassigned pool')}
+/* login */
+function fill(e,p){$('#em').value=e;$('#pw').value=p}
+function doLogin(){const u=D.users.find(x=>x.email===$('#em').value.trim().toLowerCase()&&x.pw===$('#pw').value&&x.on!==false);
+ if(!u){S.err='Email or password is incorrect. Use a quick-fill button below.';draw();return}
+ S.me=u.id;S.tab=u.role==='admin'?'ov':'my';S.err='';S.msg='';draw()}
+function logout(){S.me=null;S.open=null;$('#modal').innerHTML='';draw()}
+function reset(){if(confirm('Reset all demo data?')){D=seed();save();S.open=null;$('#modal').innerHTML='';draw()}}
+function loginView(){return`<div class="lg"><h1>Leadbook</h1><p class="mu">Sign in as admin or employee to walk through the flow.</p><div class="panel"><input id="em" placeholder="Email" aria-label="Email" autocomplete="off"><input id="pw" type="password" placeholder="Password" aria-label="Password" onkeydown="if(event.key==='Enter')doLogin()">${S.err?`<div class="warn">${S.err}</div>`:''}<button class="btn pri" onclick="doLogin()">Sign in</button></div><p class="mu">Demo accounts, click to fill:</p><div class="chips"><button class="btn" onclick="fill('admin@demo.com','admin123')">Admin</button>${emps().map(e=>`<button class="btn" onclick="fill('${e.email}','${e.pw}')">${esc(e.name)}</button>`).join('')}</div></div>`}
+function draw(){const a=$('#app');if(!S.me){a.innerHTML=loginView();return}
+ const u=U(S.me),adm=u.role==='admin';
+ const tabs=adm?[['ov','Overview'],['leads','All leads'],['up','Upload leads'],['team','Team'],['rem','Reminders'],['feed','Activity']]:[['my','My leads'],['fu','Follow-ups']];
+ a.innerHTML=`<header><h1>Leadbook</h1><span class="role">${adm?'Admin':'Employee'}</span><b>${esc(u.name)}</b><nav>${tabs.map(([k,n])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';S.msg='';draw()">${n}</button>`).join('')}</nav><span class="sp"></span><button class="btn" onclick="reset()">Reset demo</button><button class="btn" onclick="logout()">Log out</button></header><main>${adm?admin():emp()}</main>`}
+/* admin */
+function admin(){return{ov:ovw,leads:allLeads,up:upload,team:teamV,rem:remV,feed:feed}[S.tab]()}
+function ovw(){const L=D.leads,un=L.filter(l=>!l.owner).length;
+ const rows=emps().map(e=>{const m=L.filter(l=>l.owner===e.id),last=m.flatMap(l=>l.act).filter(a=>a.by===e.id).sort((a,b)=>b.t-a.t)[0];
+ return`<tr class="row" onclick="S.emp='${e.id}';S.tab='leads';draw()"><td><b>${esc(e.name)}</b></td><td>${m.length}</td><td>${m.filter(l=>l.st==='New').length}</td><td>${m.filter(l=>l.st!=='New').length}</td><td class="ok">${m.filter(l=>l.st==='Won').length}</td><td>${m.filter(l=>l.st==='Lost').length}</td><td class="${m.some(over)?'warn':''}">${m.filter(over).length}</td><td>${last?ago(last.t):'No activity'}</td></tr>`}).join('');
+ return`<div class="flow"><div><b>1. Admin uploads leads</b><small>CSV file or pasted rows. Duplicates are skipped.</small></div><div><b>2. Leads get one owner</b><small>Assigned on upload or later. Never shared.</small></div><div><b>3. Employee works the lead</b><small>Calls, notes, status, follow-ups.</small></div><div><b>4. Admin reviews the work</b><small>Team table, activity feed, lead history.</small></div></div>
+ <div class="grid"><div class="panel"><small>Total leads</small><div class="big">${L.length}</div></div><div class="panel"><small>Unassigned</small><div class="big ${un?'warn':''}">${un}</div></div><div class="panel"><small>Won</small><div class="big ok">${L.filter(l=>l.st==='Won').length}</div></div><div class="panel"><small>Overdue follow-ups</small><div class="big ${L.some(over)?'warn':''}">${L.filter(over).length}</div></div><div class="panel"><small>Stale leads</small><div class="big ${L.some(stale)?'warn':''}">${L.filter(stale).length}</div></div></div>
+ <h3>Team performance <small>(click a row to see that employee’s leads)</small></h3><div class="wrap"><table><tr><th>Employee</th><th>Assigned</th><th>Not yet contacted</th><th>Worked</th><th>Won</th><th>Lost</th><th>Overdue</th><th>Last activity</th></tr>${rows}</table></div>${staleBox()}`}
+function allLeads(){let L=D.leads.filter(l=>(!S.emp||(S.emp==='none'?!l.owner:l.owner===S.emp))&&(!S.st||l.st===S.st));const un=D.leads.filter(l=>!l.owner).length;
+ return`<div class="bar"><select aria-label="Employee" onchange="S.emp=this.value;draw()"><option value="">All employees</option><option value="none" ${S.emp==='none'?'selected':''}>Unassigned</option>${emps().map(e=>`<option value="${e.id}" ${S.emp===e.id?'selected':''}>${esc(e.name)}</option>`).join('')}</select><select aria-label="Status" onchange="S.st=this.value;draw()"><option value="">All statuses</option>${ST.map(s=>`<option ${S.st===s?'selected':''}>${s}</option>`).join('')}</select><span class="sp"></span>${un?`<button class="btn pri" onclick="autoAssign()">Auto-assign ${un} unassigned</button>`:''}</div>
+ ${S.msg?`<p class="ok">${S.msg}</p>`:''}${L.length?`<div class="wrap"><table class="lt"><tr><th>Lead</th><th>Status</th><th>Follow-up</th><th>Last action</th><th>Owner</th></tr>${L.map(l=>`<tr class="row" onclick="openLead('${l.id}')"><td><b>${esc(l.name)}</b><br><small>${esc(l.company)} · ${esc(l.phone)}</small></td><td>${l.st}${stale(l)?' <span class="warn">Stale</span>':''}${l.lost?'<br><small>Lost: '+esc(l.lost)+'</small>':''}</td><td class="${over(l)?'warn':''}">${l.fu||'None'}</td><td><small>${l.act[0]?esc(l.act[0].text)+' · '+ago(l.act[0].t):''}</small></td><td onclick="event.stopPropagation()"><select aria-label="Owner of ${esc(l.name)}" onchange="reassign('${l.id}',this.value)"><option value="">Unassigned</option>${emps().map(e=>`<option value="${e.id}" ${l.owner===e.id?'selected':''}>${esc(e.name)}</option>`).join('')}</select></td></tr>`).join('')}</table></div>`:'<div class="empty">No leads match these filters.</div>'}`}
+function reassign(id,eid){const l=D.leads.find(x=>x.id===id);assign(l,eid,'a');save();draw()}
+function autoAssign(){let n=0;D.leads.filter(l=>!l.owner).forEach(l=>{assign(l,leastLoaded().id,'a');n++});S.msg=`Assigned ${n} leads, balanced across employees.`;save();draw()}
+function upload(){return`<div class="panel"><h3>Upload leads</h3><p class="mu">Columns: name, company, phone, source. A lead whose phone number already exists is skipped, so no two employees can end up with the same lead.</p><input type="file" accept=".csv" onchange="readFile(this)" aria-label="CSV file"><p class="mu">Or paste rows:</p><textarea id="paste" placeholder="name,company,phone,source&#10;Ravi Kumar,Acme Ltd,9811122233,Website"></textarea>
+ <div class="f" style="margin-top:10px"><label>On upload<select id="mode"><option value="none">Keep in unassigned pool</option><option value="rr">Split evenly across employees</option>${emps().map(e=>`<option value="${e.id}">Assign all to ${esc(e.name)}</option>`).join('')}</select></label></div>
+ <div class="bar"><button class="btn pri" onclick="doUpload($('#paste').value)">Upload leads</button><button class="btn" onclick="sample()">Load 8 sample leads</button></div>${S.msg?`<p class="ok">${S.msg}</p>`:''}</div>`}
+function readFile(i){const f=i.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('#paste').value=r.result};r.readAsText(f)}
+function parse(s){const r=[];let row=[],c='',q=false;for(let i=0;i<s.length;i++){const ch=s[i];if(q){if(ch==='"'&&s[i+1]==='"'){c+='"';i++}else if(ch==='"')q=false;else c+=ch}else if(ch==='"')q=true;else if(ch===','){row.push(c);c=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&s[i+1]==='\n')i++;row.push(c);c='';if(row.some(x=>x))r.push(row);row=[]}else c+=ch}row.push(c);if(row.some(x=>x))r.push(row);return r}
+function doUpload(txt){const rows=parse(txt||'');if(rows.length<2){S.msg='Add a header row and at least one lead.';draw();return}
+ const h=rows[0].map(x=>x.trim().toLowerCase());if(!h.includes('name')||!h.includes('phone')){S.msg='The header must include name and phone.';draw();return}
+ const mode=$('#mode')?$('#mode').value:'none';let add=0,skip=0;
+ rows.slice(1).forEach(r=>{const o={};h.forEach((k,i)=>o[k]=(r[i]||'').trim());if(!o.name)return;
+ if(D.leads.some(l=>dig(l.phone)===dig(o.phone))){skip++;return}
+ const l={id:uid(),name:o.name,company:o.company||'',phone:o.phone,source:o.source||'Other',owner:null,st:'New',fu:'',act:[]};act(l,'a','Uploaded by Admin');
+ if(mode==='rr')assign(l,leastLoaded().id,'a');else if(mode!=='none')assign(l,mode,'a');
+ D.leads.unshift(l);add++});
+ S.msg=`Uploaded ${add} leads. Skipped ${skip} duplicates.`;save();draw()}
+function sample(){const n=['Rhea Kapoor,Sunrise Dental','Yash Malhotra,Cobalt IT','Pooja Bansal,Urban Nest','Arjun Reddy,Veda Foods','Isha Gupta,Bluewave Travel','Manav Shah,Prime Tiles','Zoya Sheikh,Loom Studio','Kunal Desai,Apex Gyms'];
+ const b=String(Date.now()).slice(-6);doUpload('name,company,phone,source\n'+n.map((x,i)=>x+',98'+b+'0'+i+',Website').join('\n'))}
+function feed(){const A=D.leads.flatMap(l=>l.act.map(a=>({...a,l}))).sort((a,b)=>b.t-a.t).slice(0,40);
+ return`<h3>Recent activity across the team</h3><div class="panel">${A.map(a=>`<div class="tl"><b>${esc(nm(a.by))}</b> · ${esc(a.text)}<small><a href="#" onclick="openLead('${a.l.id}');return false">${esc(a.l.name)}</a> · ${ago(a.t)}</small></div>`).join('')}</div>`}
+/* employee */
+function emp(){const mine=D.leads.filter(l=>l.owner===S.me);
+ const stats=`<div class="grid"><div class="panel"><small>My leads</small><div class="big">${mine.length}</div></div><div class="panel"><small>Not yet contacted</small><div class="big">${mine.filter(l=>l.st==='New').length}</div></div><div class="panel"><small>Follow-ups due</small><div class="big ${mine.some(over)?'warn':''}">${mine.filter(l=>l.fu&&l.fu<=today()&&!['Won','Lost'].includes(l.st)).length}</div></div><div class="panel"><small>Won</small><div class="big ok">${mine.filter(l=>l.st==='Won').length}</div></div></div>`;
+ let L=mine;if(S.tab==='fu')L=mine.filter(l=>l.fu&&!['Won','Lost'].includes(l.st)).sort((a,b)=>a.fu.localeCompare(b.fu));
+ else L=[...mine].sort((a,b)=>(ST.indexOf(a.st)>3)-(ST.indexOf(b.st)>3)||(a.fu||'~').localeCompare(b.fu||'~'));
+ return`<p class="mu">You only see leads assigned to you. Nobody else can work them.</p>${stats}${S.tab==='fu'?remBox():''}${L.length?`<div class="cards">${L.map(l=>`<div class="card" tabindex="0" onclick="openLead('${l.id}')" onkeydown="if(event.key==='Enter')openLead('${l.id}')"><b>${esc(l.name)}</b><br><small>${esc(l.company)}</small><div style="margin:6px 0"><span class="tag">${l.st}</span></div><small>${esc(l.phone)}</small>${stale(l)?' <span class="warn">Stale</span>':''}<br><small class="${over(l)?'warn':''}">${l.fu?'Follow-up '+l.fu+(over(l)?' (overdue)':''):'No follow-up set'}</small></div>`).join('')}</div>`:'<div class="empty">Nothing here. Ask your admin to assign leads.</div>'}`}
+function openLead(id){S.open=id;S.askLost=false;drawer()}
+function closeD(){S.open=null;$('#modal').innerHTML='';draw()}
+function drawer(){const l=D.leads.find(x=>x.id===S.open),u=U(S.me),adm=u.role==='admin';
+ if(!l||(!adm&&l.owner!==S.me)){closeD();return}
+ $('#modal').innerHTML=`<div class="ov" onclick="if(event.target===this)closeD()"><div class="dr" role="dialog" aria-label="Lead details"><h3 style="font-size:18px">${esc(l.name)}</h3><p class="mu">${esc(l.company)} · ${esc(l.phone)} · ${esc(l.source)}<br>Owner: <b>${esc(nm(l.owner))}</b></p>
+ ${adm?`<p><span class="tag">${l.st}</span> ${l.fu?'Follow-up '+l.fu:''}${l.lost?' · Lost reason: '+esc(l.lost):''}</p><p class="mu">Read-only. Change the owner from the All leads tab.</p>`:`${contactBtns(l)}${S.askLost?lostBox():''}<div class="f"><label>Status<select onchange="setSt(this.value)">${ST.map(s=>`<option ${s===l.st?'selected':''}>${s}</option>`).join('')}</select></label><label>Next follow-up<input type="date" value="${l.fu||''}" onchange="setFu(this.value)"></label></div>
+ <h4>Log a call</h4><div class="chips">${OUT.map(o=>`<button class="btn" onclick="call('${o}')">${o}</button>`).join('')}</div>
+ <div class="add"><input id="nt" placeholder="Add a note" onkeydown="if(event.key==='Enter')note()"><button class="btn" onclick="note()">Add note</button></div>`}
+ <h4>History</h4>${l.act.map(a=>`<div class="tl">${esc(a.text)}<small>${esc(nm(a.by))} · ${ago(a.t)}</small></div>`).join('')||'<div class="tl">No activity yet.</div>'}
+ <div class="bar" style="margin-top:14px"><button class="btn" onclick="closeD()">Close</button></div></div></div>`}
+function mine(){const l=D.leads.find(x=>x.id===S.open);return l&&l.owner===S.me?l:null}
+function setSt(v){const l=mine();if(!l||l.st===v)return;if(v==='Lost'){S.askLost=true;drawer();return}act(l,S.me,`Status: ${l.st} → ${v}`);l.st=v;delete l.lost;if(v==='Won')l.fu='';save();drawer()}
+function setFu(v){const l=mine();if(!l)return;l.fu=v;act(l,S.me,'Follow-up set to '+(v||'none'));save()}
+function call(o){const l=mine();if(!l)return;act(l,S.me,'Call: '+o);if(l.st==='New'){act(l,S.me,'Status: New → Contacted');l.st='Contacted'}if(o==='No answer'||o==='Busy'){l.fu=day(1);act(l,S.me,'Follow-up set to '+l.fu)}save();drawer()}
+function note(){const l=mine(),t=$('#nt').value.trim();if(!l||!t)return;act(l,S.me,'Note: '+t);save();drawer()}
+const stale=l=>!['Won','Lost'].includes(l.st)&&l.act[0]&&Date.now()-l.act[0].t>D.cfg.stale*864e5;
+const due=e=>D.leads.filter(l=>l.owner===e&&l.fu&&l.fu<=today()&&!['Won','Lost'].includes(l.st)).sort((a,b)=>a.fu.localeCompare(b.fu));
+function remMsg(e){const L=due(e);if(!L.length)return'';return`Hi ${U(e).name.split(' ')[0]}, you have ${L.length} follow-up${L.length>1?'s':''} due:\n`+L.map((l,i)=>`${i+1}. ${l.name} (${l.phone})${l.fu<today()?', overdue':''}`).join('\n')+'\nOpen Leadbook to update them.'}
+function staleBox(){const R={};D.leads.filter(l=>l.st==='Lost').forEach(l=>{const k=l.lost||'Not recorded';R[k]=(R[k]||0)+1});const X=D.leads.filter(stale);
+return`<div class="bar" style="margin-top:16px"><h3 style="margin:0">Stale leads</h3><span class="mu">No activity for</span><input type="number" min="1" max="30" value="${D.cfg.stale}" style="width:64px" aria-label="Days" onchange="D.cfg.stale=Math.max(1,+this.value||2);save();draw()"><span class="mu">days or more</span></div>${X.length?`<div class="wrap"><table><tr><th>Lead</th><th>Owner</th><th>Status</th><th>Last activity</th></tr>${X.map(l=>`<tr class="row" onclick="openLead('${l.id}')"><td><b>${esc(l.name)}</b></td><td>${esc(nm(l.owner))}</td><td>${l.st}</td><td class="warn">${ago(l.act[0].t)}</td></tr>`).join('')}</table></div>`:'<div class="empty">No stale leads.</div>'}<h3 style="margin-top:16px">Why leads were lost</h3><div class="panel">${Object.keys(R).map(k=>`<div>${esc(k)}: <b>${R[k]}</b></div>`).join('')||'<span class="mu">No lost leads yet.</span>'}</div>`}
+function teamV(){const E=D.users.filter(u=>u.role==='emp'),P=D.leads.filter(l=>!l.owner).length;
+return`<div class="panel"><h3>Add employee</h3><div class="bar"><input id="ne" placeholder="Name" aria-label="Name"><input id="np" placeholder="WhatsApp number" aria-label="WhatsApp number"><button class="btn pri" onclick="addEmp()">Add employee</button>${P?`<button class="btn" onclick="autoAssign()">Auto-assign ${P} unassigned</button>`:''}</div>${S.msg?`<p class="ok">${esc(S.msg)}</p>`:''}</div><div class="wrap"><table><tr><th>Employee</th><th>WhatsApp</th><th>Open leads</th><th>Status</th><th></th></tr>${E.map(e=>{const n=D.leads.filter(l=>l.owner===e.id&&!['Won','Lost'].includes(l.st)).length;return`<tr><td><b>${esc(e.name)}</b><br><small>${esc(e.email)}</small></td><td>${esc(e.ph||'')}</td><td>${n}</td><td>${e.on===false?'Inactive':'<span class="ok">Active</span>'}</td><td>${e.on===false?`<button class="btn" onclick="setOn('${e.id}',true)">Reactivate</button>`:`<button class="btn" onclick="setOn('${e.id}',false)">Deactivate</button>`}</td></tr>`}).join('')}</table></div>`}
+function addEmp(){const n=$('#ne').value.trim(),p=$('#np').value.trim();if(!n||!p){S.msg='Enter a name and a WhatsApp number.';draw();return}const em=n.split(' ')[0].toLowerCase()+uid().slice(0,2)+'@demo.com';D.users.push({id:'e'+uid(),name:n,role:'emp',email:em,pw:'1234',ph:p});S.msg=`Added ${n}. Login: ${em} / 1234.`;save();draw()}
+function setOn(id,on){const u=U(id);if(!on){if(emps().length<2){S.msg='Keep at least one active employee.';draw();return}const O=D.leads.filter(l=>l.owner===id&&!['Won','Lost'].includes(l.st));if(!confirm(`${u.name} has ${O.length} open leads. Deactivating returns them to the unassigned pool. Continue?`))return;O.forEach(l=>assign(l,null,'a'));u.on=false;S.msg=`${u.name} deactivated. ${O.length} leads returned to the pool. Use Auto-assign to redistribute them.`}else{u.on=true;S.msg=u.name+' reactivated.'}save();draw()}
+function remV(){const E=emps().filter(e=>due(e.id).length);
+return`<div class="panel"><h3>WhatsApp follow-up reminders</h3><div class="bar"><label><input type="checkbox" ${D.cfg.wa?'checked':''} onchange="D.cfg.wa=this.checked;save();draw()"> Send reminders to employees</label><label>Daily at <select onchange="D.cfg.when=this.value;save();draw()">${['08:00','09:00','10:00'].map(t=>`<option ${t===D.cfg.when?'selected':''}>${t}</option>`).join('')}</select></label><span class="sp"></span><button class="btn pri" ${D.cfg.wa&&E.length?'':'disabled'} onclick="sendAll()">Send all due now</button></div><p class="mu">Prototype only: nothing is actually sent. A live version needs the WhatsApp Business API, approved message templates, and a server job that runs at the chosen time.</p>${S.msg?`<p class="ok">${esc(S.msg)}</p>`:''}</div><h3>Due today or overdue</h3>${E.map(e=>`<div class="panel"><b>${esc(e.name)}</b> <small>${esc(e.ph||'No number')} · ${due(e.id).length} due</small><div class="wa">${esc(remMsg(e.id))}</div><div style="margin-top:8px"><button class="btn" ${D.cfg.wa?'':'disabled'} onclick="sendRem('${e.id}')">Send now</button></div></div>`).join('')||'<div class="empty">No follow-ups due.</div>'}<h3>Sent log</h3>${D.rem.slice(0,10).map(r=>`<div class="panel"><small>To ${esc(nm(r.to))} · ${ago(r.t)}</small><div class="wa">${esc(r.text)}</div></div>`).join('')||'<div class="empty">Nothing sent yet.</div>'}`}
+function sendRem(e){const m=remMsg(e);if(!m)return;D.rem.unshift({t:Date.now(),to:e,text:m});S.msg='Reminder sent (simulated) to '+nm(e)+'.';save();draw()}
+function sendAll(){let n=0;emps().forEach(e=>{const m=remMsg(e.id);if(m){D.rem.unshift({t:Date.now(),to:e.id,text:m});n++}});S.msg=`Sent ${n} reminders (simulated).`;save();draw()}
+function remBox(){const m=D.rem.filter(r=>r.to===S.me).slice(0,3);return`<div class="panel"><h3>WhatsApp reminders</h3><p class="mu">${D.cfg.wa?`On. You get a message at ${D.cfg.when} on ${esc(U(S.me).ph||'your number')} when follow-ups are due.`:'Off. Your admin has not enabled reminders.'}</p>${m.map(r=>`<small>${ago(r.t)}</small><div class="wa" style="margin-bottom:8px">${esc(r.text)}</div>`).join('')||'<small>No reminders received yet.</small>'}</div>`}
+function contactBtns(l){const raw=String(l.phone).replace(/[^\d+]/g,''),num=raw.startsWith('+')?raw.slice(1):(raw.length>10?raw:'91'+dig(raw));const msg=encodeURIComponent(`Hi ${l.name.split(' ')[0]}, this is ${U(S.me).name} following up on your enquiry.`);
+return`<div class="chips" style="margin:8px 0"><a class="btn" href="tel:+${num}" onclick="contact('Call started from app')">Call</a><a class="btn" href="https://wa.me/${num}?text=${msg}" target="_blank" rel="noopener" onclick="contact('WhatsApp chat opened')">WhatsApp</a></div>`}
+function contact(t){const l=mine();if(l){act(l,S.me,t);save()}}
+function lostBox(){return`<div class="panel"><b>Why was this lead lost?</b><div class="chips" style="margin:8px 0">${['Price','No response','Chose competitor','Wrong contact','Not interested','Other'].map(r=>`<button class="btn" onclick="lost('${r}')">${r}</button>`).join('')}</div><button class="btn" onclick="S.askLost=false;drawer()">Cancel</button></div>`}
+function lost(r){const l=mine();if(!l)return;act(l,S.me,`Status: ${l.st} → Lost (${r})`);l.st='Lost';l.lost=r;l.fu='';S.askLost=false;save();drawer()}
+function labelTables(){document.querySelectorAll('table').forEach(t=>{const h=[...t.rows[0].cells].map(c=>c.textContent.trim());[...t.rows].slice(1).forEach(r=>[...r.cells].forEach((c,i)=>{if(h[i])c.setAttribute('data-label',h[i])}))})}
+const _draw=draw;draw=function(){_draw();labelTables()};
+load();draw();
+</script></body></html>
