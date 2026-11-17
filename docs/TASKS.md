@@ -102,3 +102,7 @@ Owner said "go" without answering the open questions, so defaults apply:
 - Reminder text must fit a Meta template (no line breaks in variables, no customer phone numbers).
 - Add Email field to Add employee form; show deactivated owners greyed out in the owner dropdown.
 - Node on this machine is v22 (prompt says 20); `engines` allows >=20.
+
+### T0.2 note
+
+\* `/health` returns 200 (verified by running the API and curl). `docker compose config` validates the Compose file, but **`docker compose up` itself was not run**: the build sandbox has no Docker daemon. Owner: please run `docker compose up -d` once on your machine. Compose has Postgres only (Redis dropped, see decisions above).
