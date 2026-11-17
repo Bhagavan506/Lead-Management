@@ -181,6 +181,19 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 `GET /api/leads/:id` (any signed-in role) returns `{ lead, timeline, timelineTruncated, staleDays }`. The lookup is `WHERE id = :id AND <leadScope>` in one query, never fetch-then-check, so another employee's lead and a nonexistent id return the **same 404 body** (tested for equality, and the body contains no name/owner). Unassigned leads are 404 for employees. Timeline is newest first with actor names; capped at 500 entries (flag `timelineTruncated`). Activity `meta` is deliberately not returned (it can hold other employees' ids). An IDOR sweep checks every employee × every lead: 200 iff owner, else 404. Mutation-checked (4 tests fail without the scope). 9 tests.
 
+### T3.4 note
+
+`POST /api/leads/upload` (admin only). **Body is JSON** `{ csv, mode, ownerId? }`, not multipart: the UI reads the chosen file (or pasted text) in the browser and sends the text, exactly like the prototype, so one endpoint serves both "file" and "paste". Limits: 5,000 data rows, 5 MB (`bodyLimit` 6 MB; auth runs in `onRequest`, so anonymous clients are rejected before the body is read).
+
+- **Columns:** `name`, `phone` required; `company`, `source` optional (source defaults to "Other"); any order/case, extra columns ignored; `,` `;` or tab separated; quotes, CRLF, BOM handled (`csv-parse`). Phones normalized to E.164 with `DEFAULT_COUNTRY_CODE`.
+- **Modes:** `none` (pool), `split` (each new lead to the currently least-loaded active employee, ties by account age), `owner` (+`ownerId`, must be an active employee). Deactivated employees never receive leads.
+- **Report:** `{ summary:{rows, added, skipped, skippedInFile, skippedExisting, invalid}, skipped[], invalid[], assignment }`, every entry with its file row number and a reason (lists capped at 500, `reportTruncated` says so). Bad rows do not block good ones; whole-file problems (no `name`/`phone` header, empty, header-only, unreadable quoting, >5000 rows) return 422 `INVALID_FILE` and add nothing.
+- **Duplicates:** inside the file (any phone spelling; first row wins) and against the database. The database check is the unique index via `ON CONFLICT DO NOTHING`, **not** check-then-insert, so two simultaneous uploads add each lead exactly once (tested with a race of two identical 40-row uploads). Existing leads are never modified by an upload.
+- **Atomic:** one transaction (leads, history, assignment); a forced failure mid-way leaves zero new leads or history rows. Active employees are locked in the same order as deactivation, so an upload cannot hand leads to an employee who is being deactivated.
+- History written per new lead: "Uploaded by <admin name>" then, if assigned, "Assigned to <employee>" (timestamps use `clock_timestamp()` so the order is reliable inside a transaction).
+- Mutation-checked: removing `ON CONFLICT` fails 3 tests. 28 tests (11 parser + 17 API).
+- **Not handled:** spreadsheet "formula injection" (cells starting `=`, `+`, `-`, `@`) is not neutralised because nothing in the spec exports data; revisit if an export feature is ever added.
+
 ## Phase 2 summary (Team management) — complete
 
 **Done:** create/list employees with a one-time temporary password, deactivate/reactivate with race-free last-employee protection and full rollback, forced first-login password change. 102 tests total (24 new in this phase), all against a real Postgres. Mutation-checked: the row lock, the forced-change gate.
@@ -195,4 +208,4 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 ## Status at last checkpoint
 
-Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.4 (CSV upload). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.5 (assign and reassign). \*`docker compose up` unverified (no Docker daemon in sandbox).
