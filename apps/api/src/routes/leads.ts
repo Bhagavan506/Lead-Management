@@ -4,6 +4,7 @@ import { AppError } from "../errors.js";
 import { CsvFileError, parseLeadCsv } from "../lib/csv-leads.js";
 import type { SessionUser } from "../plugins/auth.js";
 import { assignLead } from "../services/lead-assign.js";
+import { changeStatus } from "../services/lead-status.js";
 import { autoAssignLeads } from "../services/lead-auto-assign.js";
 import { uploadLeads, type UploadMode } from "../services/lead-upload.js";
 import { getLeadDetail, listLeads } from "../services/leads.js";
@@ -41,6 +42,13 @@ const uploadBody = z
         message: "Only allowed when mode is owner",
       });
   });
+
+const statusBody = z.object({
+  status: z.enum(["NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "WON", "LOST"]),
+  lostReason: z
+    .enum(["PRICE", "NO_RESPONSE", "CHOSE_COMPETITOR", "WRONG_CONTACT", "NOT_INTERESTED", "OTHER"])
+    .optional(),
+});
 
 const assignBody = z.object({ ownerId: z.string().uuid().nullable() });
 
@@ -94,5 +102,14 @@ export async function leadRoutes(app: FastifyInstance) {
   // Admin only. Gives every unassigned open lead to the least-loaded active employee.
   app.post("/auto-assign", { preHandler: app.guard("ADMIN") }, async (req) => {
     return autoAssignLeads(app.db, { id: (req.user as SessionUser).id });
+  });
+
+  // Lead work: employees only (admins are read-only, rule 4), and only on leads they own (404 otherwise).
+  app.patch("/:id/status", { preHandler: app.guard("EMPLOYEE") }, async (req) => {
+    const { id } = idParams.parse(req.params);
+    const { status, lostReason } = statusBody.parse(req.body);
+    const user = req.user as SessionUser;
+    const { changed } = await changeStatus(app.db, user, id, status, lostReason);
+    return { changed, ...(await getLeadDetail(app.db, user, id)) };
   });
 }
