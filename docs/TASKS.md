@@ -6,7 +6,7 @@ Rule: one task at a time, in order. A task is `done` only when typecheck, lint a
 | ID | Task | Done when | Status | Commit |
 |----|------|-----------|--------|--------|
 | **Phase 0: Setup** |||||
-| 0.1 | Scaffold pnpm monorepo (`apps/api`, `apps/web`, `reference/`), TypeScript config, lint and format, `.env.example` | `pnpm install`, `pnpm lint` and `pnpm typecheck` pass | todo | |
+| 0.1 | Scaffold pnpm monorepo (`apps/api`, `apps/web`, `reference/`), TypeScript config, lint and format, `.env.example` | `pnpm install`, `pnpm lint` and `pnpm typecheck` pass | in progress | |
 | 0.2 | Docker Compose for Postgres and Redis; API `/health` endpoint | `docker compose up` works and `/health` returns 200 | todo | |
 | 0.3 | Prisma setup with baseline migration; `pnpm test` script in both apps | A trivial test passes in each app | todo | |
 | **Phase 1: Database and auth** |||||
@@ -86,3 +86,14 @@ Prototype added at `reference/leadbook-flow-demo.html`. Resolved by it (treated 
 - Prototype-only, not carried over: "Reset demo", quick-fill demo logins, auto-generated `@demo.com` emails, shared password `1234`.
 
 Still open (asked of owner): manual "Send now" vs one-per-day uniqueness; multi-line message vs Meta template limits; employee email entry; schema additions in 1.1; Redis; `APP_TIMEZONE`.
+
+### Go given — 2026-11-17
+Owner said "go" without answering the open questions, so defaults apply:
+- Schema (1.1) adds `User.mustChangePassword`, `Activity.meta` (JSON), `Lead.lastActivityAt`.
+- **Execution order change:** 3.1 (phone normalizer) is done right after 1.1 and before 1.2 (seed needs E.164).
+- `APP_TIMEZONE=Asia/Kolkata`, `DEFAULT_COUNTRY_CODE=IN`, both env vars.
+- No Redis/BullMQ: in-process per-minute scheduler, unique(employeeId, date) for idempotency; in-memory rate limit. Docker Compose gets Postgres only. Revisit if hosting needs multiple API instances.
+- "Send now": scheduled run once per employee per day; manual send is a separate logged override.
+- Reminder text must fit a Meta template (no line breaks in variables, no customer phone numbers).
+- Add Email field to Add employee form; show deactivated owners greyed out in the owner dropdown.
+- Node on this machine is v22 (prompt says 20); `engines` allows >=20.
