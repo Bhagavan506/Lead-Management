@@ -1,8 +1,9 @@
-import { and, count, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { activities, leads } from "../db/schema.js";
 import { AppError } from "../errors.js";
 import type { ParsedCsv, RowIssue } from "../lib/csv-leads.js";
+import { distributeLeastLoaded, openLoads } from "./least-loaded.js";
 import { lockActiveEmployees } from "./locks.js";
 
 export type UploadMode = { kind: "none" } | { kind: "split" } | { kind: "owner"; ownerId: string };
@@ -95,31 +96,12 @@ export async function uploadLeads(
         added.map((l) => idByPhone.get(l.phone) as string),
       );
     } else if (mode.kind === "split" && added.length > 0) {
-      const load = new Map<string, number>(employees.map((e) => [e.id, 0]));
-      const rows = await tx
-        .select({ ownerId: leads.ownerId, n: count() })
-        .from(leads)
-        .where(
-          and(
-            isNotNull(leads.ownerId),
-            inArray(
-              leads.ownerId,
-              employees.map((e) => e.id),
-            ),
-            notInArray(leads.status, ["WON", "LOST"]),
-          ),
-        )
-        .groupBy(leads.ownerId);
-      for (const r of rows) load.set(r.ownerId as string, r.n);
-      const order = [...employees].sort(
-        (a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id),
-      );
-      for (const l of added) {
-        const pick = order.reduce((best, e) =>
-          (load.get(e.id) as number) < (load.get(best.id) as number) ? e : best,
+      const load = await openLoads(tx, employees);
+      for (const [ownerId, items] of distributeLeastLoaded(employees, load, added)) {
+        owners.set(
+          ownerId,
+          items.map((l) => idByPhone.get(l.phone) as string),
         );
-        load.set(pick.id, (load.get(pick.id) as number) + 1);
-        owners.set(pick.id, [...(owners.get(pick.id) ?? []), idByPhone.get(l.phone) as string]);
       }
     }
 

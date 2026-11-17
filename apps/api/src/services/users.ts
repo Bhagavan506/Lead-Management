@@ -95,7 +95,7 @@ export async function deactivateEmployee(db: Db, targetId: string, adminId: stri
       const ids = open.map((l) => l.id);
       await tx
         .update(leads)
-        .set({ ownerId: null, updatedAt: sql`now()`, lastActivityAt: sql`now()` })
+        .set({ ownerId: null, updatedAt: sql`now()`, lastActivityAt: sql`clock_timestamp()` })
         .where(inArray(leads.id, ids));
       await tx.insert(activities).values(
         ids.map((leadId) => ({
@@ -104,6 +104,9 @@ export async function deactivateEmployee(db: Db, targetId: string, adminId: stri
           type: "UNASSIGNED" as const,
           text: "Moved back to unassigned pool",
           meta: { fromOwnerId: targetId, reason: "employee_deactivated" },
+          // clock_timestamp, not now(): now() is the transaction START, which would sort this entry
+          // before an assignment that committed first while we waited on its lock.
+          createdAt: sql`clock_timestamp()`,
         })),
       );
     }

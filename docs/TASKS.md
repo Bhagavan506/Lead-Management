@@ -202,6 +202,22 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 - **How the tests were checked:** my first concurrency tests did not fail under mutation. Reasons found: (1) removing only the lead row lock is an _equivalent_ mutant, since every assignment already serializes on the shared employee locks (the lead lock is defense in depth); (2) my deactivation race started with an unassigned lead, so no deadlock could form. Fixed by adding a test where the lead is owned by the employee being deactivated while it is moved to another. Now: inverted lock order reproduces a real deadlock and fails the test; removing all locks fails 4 tests; real code passes 12/12.
 - **Consequence to be aware of:** because assign/upload/deactivate/auto-assign share the employee lock, they run one at a time system-wide. These are rare admin actions, so that is fine; revisit only if upload volume ever becomes large.
 
+### T3.6 note
+
+`POST /api/leads/auto-assign` (admin only): every unassigned **open** lead goes, in order, to the currently least-loaded active employee (load = open leads; Won/Lost do not count). Returns `{ assigned, byEmployee[] }`; history "Assigned to X" with `meta { fromOwnerId:null, toOwnerId, auto:true }`. 409 `NO_ACTIVE_EMPLOYEES` if nobody is active. Idempotent (a second run assigns 0 and writes nothing).
+
+- **Decision to confirm:** unassigned Won/Lost leads are _not_ auto-assigned (the prototype would hand them out too; giving employees dead leads seems pointless, and they only reach the pool by an explicit admin "unassign"). Say if you want the prototype behaviour.
+- Least-loaded logic is now one shared function (`services/least-loaded.ts`) used by both upload "split" and auto-assign. Ties go to the longer-standing account, then id.
+- **Bug found and fixed while testing:** deactivation stamped its history with `now()` (= transaction _start_), so after waiting on a lock it could sort _before_ an assignment it actually followed, showing events in the wrong order. Now uses `clock_timestamp()`; the new ownership-chain invariant (`test/invariants.ts`) fails without that fix.
+- **Tests:** 10. Concurrency: 3 simultaneous auto-assigns (each lead handled exactly once, balanced ±1), and auto-assign racing an upload, two single assigns, a deactivation and another auto-assign (no 500s, connected ownership chains, no open lead left with an inactive employee). Mutation-checked: removing all locks fails the concurrency tests. A flaky _test_ (assumed a tie went one way) was found by repeated runs and fixed; 15 consecutive runs and 3 full-suite runs are clean.
+
+## Phase 3 summary (Leads core) — complete
+
+**Done:** phone normalization, scoped list, owner-scoped detail with timeline, CSV upload, assign/reassign, auto-assign. 179 API tests, all against a real Postgres.
+**Rule coverage:** 1 (one owner; chain + lock tests), 2 (E.164 + unique index; duplicates reported, never overwritten), 3 (single `leadScope` in every query; IDOR sweeps; same 404 for foreign and missing), 6 (every change writes history), 7 (deactivation returns open leads).
+**Design rule worth remembering:** any transaction touching both employees and leads takes `lockActiveEmployees()` first. Consequence: assign / upload / auto-assign / deactivate run one at a time system-wide (fine for rare admin actions).
+**Untested / gaps:** upload of the full 5,000-row maximum (tested 1,500); no per-lead edit endpoint for name/phone/company (not in spec; users will ask); reassigning does not notify the employee (reminders only); `Follow-ups` UI may need a `followUp` list filter (see T3.2).
+
 ## Phase 2 summary (Team management) — complete
 
 **Done:** create/list employees with a one-time temporary password, deactivate/reactivate with race-free last-employee protection and full rollback, forced first-login password change. 102 tests total (24 new in this phase), all against a real Postgres. Mutation-checked: the row lock, the forced-change gate.
@@ -216,4 +232,4 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 ## Status at last checkpoint
 
-Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.6 (auto-assign). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: Phases 0–3 (3.1–3.6). Next: Phase 4 (4.1 status change with lost reason). \*`docker compose up` unverified (no Docker daemon in sandbox).

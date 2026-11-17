@@ -4,6 +4,7 @@ import { AppError } from "../errors.js";
 import { CsvFileError, parseLeadCsv } from "../lib/csv-leads.js";
 import type { SessionUser } from "../plugins/auth.js";
 import { assignLead } from "../services/lead-assign.js";
+import { autoAssignLeads } from "../services/lead-auto-assign.js";
 import { uploadLeads, type UploadMode } from "../services/lead-upload.js";
 import { getLeadDetail, listLeads } from "../services/leads.js";
 
@@ -88,5 +89,10 @@ export async function leadRoutes(app: FastifyInstance) {
     const admin = req.user as SessionUser;
     const { changed } = await assignLead(app.db, { id: admin.id }, id, ownerId);
     return { changed, ...(await getLeadDetail(app.db, admin, id)) };
+  });
+
+  // Admin only. Gives every unassigned open lead to the least-loaded active employee.
+  app.post("/auto-assign", { preHandler: app.guard("ADMIN") }, async (req) => {
+    return autoAssignLeads(app.db, { id: (req.user as SessionUser).id });
   });
 }
