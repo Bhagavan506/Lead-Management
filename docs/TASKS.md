@@ -58,7 +58,7 @@ Rule: one task at a time, in order. A task is `done` only when typecheck, lint a
 | 9.3                                                                                              | Admin reminder settings (on/off, send time), "Send now", sent log, employee reminder panel                           | Tests pass                                                                      | done             | 8787f01 |
 | 9.4                                                                                              | Meta WhatsApp Cloud API provider with approved template; delivery-status webhook with signature verification         | Tests pass against a simulated Meta API. **Not verified live** (no credentials) | done (simulated) |         |
 | **Phase 10: Hardening and release**                                                              |                                                                                                                      |                                                                                 |                  |         |
-| 10.1                                                                                             | Playwright E2E: admin uploads, assigns, employee works a lead, admin sees activity                                   | E2E suite passes                                                                | todo             |         |
+| 10.1                                                                                             | Playwright E2E: admin uploads, assigns, employee works a lead, admin sees activity                                   | E2E suite passes                                                                | done             |         |
 | 10.2                                                                                             | Authorization test matrix: employee vs every admin route; employee A vs employee B's lead (IDOR)                     | Matrix passes                                                                   | todo             |         |
 | 10.3                                                                                             | Input validation and error-format review, request logging, dependency audit                                          | Review done, audit clean or documented                                          | todo             |         |
 | 10.4                                                                                             | Mobile QA pass on every screen at 360, 390, 768 px, with fixes                                                       | All screens checked and fixed                                                   | todo             |         |
@@ -323,6 +323,13 @@ All admin screens use the real API (no mock data in the app). Every screen has l
 - `MetaProvider`: one attempt, no retry (a retry could double-send), 10 s timeout, token never in errors. A 200 without a message id counts as FAILED.
 - Webhook `/webhooks/whatsapp` is mounted only when `WHATSAPP_APP_SECRET` and `WHATSAPP_VERIFY_TOKEN` are set. HMAC-SHA256 over the raw bytes, timing-safe compare; status moves forward only (SENT < DELIVERED < READ), FAILED only from PENDING/SENT. Removing the comparison makes 5 tests fail.
 - Failure reasons from Meta are not stored (no error column; no data-model change), only logged.
+
+### T10.1 note (Playwright E2E)
+
+- `e2e/` workspace, run with `pnpm test:e2e`. It uses the system Chrome (`channel: "chrome"`, no browser download), builds a throwaway database `leadbook_e2e` (`apps/api/src/test/e2e-prepare.ts`: drop, create, migrate, seed), then starts the API on :3100 and Vite on :5273. It needs a running Postgres at `localhost:5432` (override the admin URL with `E2E_ADMIN_DATABASE_URL`).
+- 7 serial specs: admin uploads and assigns (with an invalid row), duplicate re-upload skipped, Priya calls/notes/changes status/marks Lost with a reason (rule 8 checked), Priya cannot open Rohan's lead by URL, employee redirected from admin, admin sees the activity, sign-out ends the session.
+- Mutation check: making `leadScope` return no filter fails the IDOR spec; restored.
+- 3 clean runs. Selector lesson: labels wrap their control, so the accessible name includes the current value; specs use `label:has-text(...) select`.
 
 ## Status at last checkpoint
 

@@ -13,6 +13,7 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
+    "test:e2e": "pnpm --filter @leadbook/e2e test",
     "db:seed": "pnpm --filter @leadbook/api db:seed",
     "db:migrate": "pnpm --filter @leadbook/api db:migrate"
   },
