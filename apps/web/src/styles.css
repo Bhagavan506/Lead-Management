@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+/* Palette and spacing carried over from reference/leadbook-flow-demo.html. */
+:root {
+  --bg: #f2f4f7;
+  --sf: #ffffff;
+  --ink: #1a2430;
+  --mu: #667487;
+  --ln: #dde2e9;
+  --ac: #2f5bea;
+  --ac2: #e8eefe;
+  --ok: #1f8a5b;
+  --bad: #c0392b;
+  --on: #ffffff;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151c;
+    --sf: #18212b;
+    --ink: #e7ecf2;
+    --mu: #93a1b2;
+    --ln: #2a3644;
+    --ac: #7c9bff;
+    --ac2: #1f2b4a;
+    --ok: #43c08a;
+    --bad: #ef7b6d;
+    --on: #0f151c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151c;
+  --sf: #18212b;
+  --ink: #e7ecf2;
+  --mu: #93a1b2;
+  --ln: #2a3644;
+  --ac: #7c9bff;
+  --ac2: #1f2b4a;
+  --ok: #43c08a;
+  --bad: #ef7b6d;
+  --on: #0f151c;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-sf: var(--sf);
+  --color-ink: var(--ink);
+  --color-mu: var(--mu);
+  --color-ln: var(--ln);
+  --color-ac: var(--ac);
+  --color-ac2: var(--ac2);
+  --color-ok: var(--ok);
+  --color-bad: var(--bad);
+  --color-on: var(--on);
+  --font-sans: Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.45 var(--font-sans);
+}
+:focus-visible {
+  outline: 2px solid var(--ac);
+  outline-offset: 1px;
+}
+input,
+select,
+textarea {
+  background: var(--sf);
+  color: var(--ink);
+  border: 1px solid var(--ln);
+  border-radius: 8px;
+  padding: 7px 10px;
+  min-width: 0;
+  font: inherit;
+}
+/* 16px inputs stop iOS Safari zooming on focus; 42px targets are comfortable to tap. */
+@media (max-width: 700px) {
+  body {
+    font-size: 15px;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+  .tap {
+    min-height: 42px;
+  }
+}
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

@@ -38,9 +38,9 @@ Rule: one task at a time, in order. A task is `done` only when typecheck, lint a
 | 5.4                                                                                              | Lost reasons breakdown                                                                                               | Endpoint tested against seed data, admin-only                             | done        |         |
 | 5.5                                                                                              | Activity feed, paginated                                                                                             | Endpoint tested against seed data, admin-only                             | done        |         |
 | **Phase 6: Frontend foundation**                                                                 |                                                                                                                      |                                                                           |             |         |
-| 6.1                                                                                              | Vite, React, Tailwind, router, API client, TanStack Query                                                            | App builds and calls `/health`                                            | todo        |         |
-| 6.2                                                                                              | Login page, auth context, role-based protected routes                                                                | Employee typing an admin URL is redirected                                | todo        |         |
-| 6.3                                                                                              | Responsive app shell: header, scrollable tabs on mobile, light and dark mode                                         | Looks right at 360 and 768 px                                             | todo        |         |
+| 6.1                                                                                              | Vite, React, Tailwind, router, API client, TanStack Query                                                            | App builds and calls `/health`                                            | done        |         |
+| 6.2                                                                                              | Login page, auth context, role-based protected routes                                                                | Employee typing an admin URL is redirected                                | done        |         |
+| 6.3                                                                                              | Responsive app shell: header, scrollable tabs on mobile, light and dark mode                                         | Looks right at 360 and 768 px                                             | done        |         |
 | **Phase 7: Admin screens** (each: loading, empty, error states; passes 360 px check)             |                                                                                                                      |                                                                           |             |         |
 | 7.1                                                                                              | Overview: flow strip, stats, team table, stale and lost-reason panels                                                | States present; 360 px check passes                                       | todo        |         |
 | 7.2                                                                                              | All leads: filters, reassign dropdown, desktop table, mobile compact list                                            | States present; 360 px check passes                                       | todo        |         |
@@ -244,6 +244,20 @@ All admin-only (`guard("ADMIN")`; employee 403, anonymous 401, tested on every r
 - `GET/PUT /api/settings`: `staleDays` integer 1..30, unknown keys rejected (422); a corrupted stored value falls back to 2. Reminder settings join this endpoint in 9.3.
 - Mutation-checked: counting closed leads as overdue, including deactivated employees, loosening the guard, ignoring the page offset: each fails a test. 33 tests; suite 262 API + 1 web.
 
+### T6.1-T6.3 note
+
+`apps/web`: Vite 8, React 19, Tailwind 4 (palette and dark mode taken from the prototype's CSS variables), React Router 7, TanStack Query 5. Built together in one commit.
+
+- **Same-origin API.** The browser calls `/api/...` on its own origin; Vite (dev and preview) proxies `/api` and `/health` to `VITE_API_URL`. This keeps the `SameSite=Strict` cookie first-party and needs no CORS in dev. In production the web build and API must share a site (to be covered in DEPLOY notes, 10.5).
+- `lib/api.ts`: one fetch wrapper; every error becomes `ApiError{status, code, message, details, retryAfter}` from the API's single error shape; network failure is a friendly `NETWORK` error.
+- `lib/auth.tsx`: `/api/auth/me` decides who is signed in (401 = signed out, anything else = server problem shown with a Try again button, never a misleading login page). Login/logout drop every other cached query so the next person on the browser never sees the previous user's data.
+- Routes: `/login`, `/change-password`, `/admin/*` (admin only), `/app/*` (employee only). Wrong role is redirected to its own home; temp-password users are forced to change it first; after login the user goes back to the page they wanted if their role may be there. This is UX only: the API enforces every rule.
+- Shell: header (brand, role tag, name from 640px up, theme button, sign out), horizontally scrollable tab strip, light/dark/auto theme remembered per browser (applied before first paint). A failed sign-out keeps the user signed in and says so (the cookie is still valid).
+- **Placeholders:** each tab shows a "built in a later task" panel until Phases 7-8 replace it. None may remain at the end (checked in 10.6).
+- Found by tests and fixed: `qc.clear()` detached the session query so the UI never updated after login/logout; the login page's own redirect discarded the "return to where you were headed" target.
+- Verified in real Chrome (headless, system google-chrome) against the running API: login through the proxy works; no horizontal overflow at 360 and 768 px in light and dark; tab strip scrolls at 360; "Sign out" no longer wraps. 18 web tests (jsdom, mocked fetch); mutation check: removing the wrong-role redirect fails 2 tests.
+- Known: production bundle is ~523 kB (159 kB gzip), above Vite's 500 kB warning; code-splitting by route is a 10.4 candidate.
+
 ## Phase 2 summary (Team management) — complete
 
 **Done:** create/list employees with a one-time temporary password, deactivate/reactivate with race-free last-employee protection and full rollback, forced first-login password change. 102 tests total (24 new in this phase), all against a real Postgres. Mutation-checked: the row lock, the forced-change gate.
@@ -258,4 +272,4 @@ All admin-only (`guard("ADMIN")`; employee 403, anonymous 401, tested on every r
 
 ## Status at last checkpoint
 
-Done: Phases 0–5 (backend for admin and employee work complete). Next: Phase 6 (frontend foundation). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: Phases 0–5 (backend for admin and employee work complete). Phase 6 (frontend foundation) done. Next: Phase 7 (admin screens). \*`docker compose up` unverified (no Docker daemon in sandbox).
