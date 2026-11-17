@@ -3,7 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { users } from "../db/schema.js";
-import { tooManyRequests, unauthorized } from "../errors.js";
+import { AppError, tooManyRequests, unauthorized } from "../errors.js";
 import { FailureLimiter } from "../lib/failure-limiter.js";
 import { SESSION_COOKIE, durationToSeconds, signSession } from "../lib/tokens.js";
 import type { SessionUser } from "../plugins/auth.js";
@@ -11,6 +11,11 @@ import type { SessionUser } from "../plugins/auth.js";
 const loginBody = z.object({
   email: z.string().trim().min(1).max(254),
   password: z.string().min(1).max(200),
+});
+
+const changePasswordBody = z.object({
+  currentPassword: z.string().min(1).max(200),
+  newPassword: z.string().min(10, "Use at least 10 characters").max(200),
 });
 
 export const publicUser = (u: SessionUser) => ({
@@ -76,7 +81,39 @@ export async function authRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  app.get("/me", { preHandler: app.guard() }, async (req) => ({
+  app.get("/me", { preHandler: app.guard(), config: { allowTempPassword: true } }, async (req) => ({
     user: publicUser(req.user as SessionUser),
   }));
+
+  // Wrong "current password" attempts are limited per user, so a stolen session cannot brute-force it.
+  const passwordFailures = new FailureLimiter(app.config.LOGIN_MAX_FAILURES_PER_ACCOUNT, windowMs);
+
+  app.post(
+    "/change-password",
+    { preHandler: app.guard(), config: { allowTempPassword: true } },
+    async (req, reply) => {
+      const me = req.user as SessionUser;
+      const { currentPassword, newPassword } = changePasswordBody.parse(req.body);
+
+      const wait = passwordFailures.retryAfterSeconds(me.id);
+      if (wait > 0) {
+        reply.header("Retry-After", String(wait));
+        throw tooManyRequests(wait);
+      }
+      const [row] = await app.db.select().from(users).where(eq(users.id, me.id));
+      if (!row || !(await argon2.verify(row.passwordHash, currentPassword))) {
+        passwordFailures.fail(me.id);
+        throw new AppError(422, "INVALID_CURRENT_PASSWORD", "Current password is incorrect");
+      }
+      passwordFailures.reset(me.id);
+      if (newPassword === currentPassword)
+        throw new AppError(422, "PASSWORD_UNCHANGED", "New password must be different");
+
+      await app.db
+        .update(users)
+        .set({ passwordHash: await argon2.hash(newPassword), mustChangePassword: false })
+        .where(eq(users.id, me.id));
+      return { ok: true };
+    },
+  );
 }

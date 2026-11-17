@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import fp from "fastify-plugin";
 import { users, type User } from "../db/schema.js";
-import { forbidden, unauthorized } from "../errors.js";
+import { AppError, forbidden, unauthorized } from "../errors.js";
 import { SESSION_COOKIE, verifySession } from "../lib/tokens.js";
 
 export type SessionUser = Pick<
@@ -10,6 +10,10 @@ export type SessionUser = Pick<
 >;
 
 declare module "fastify" {
+  interface FastifyContextConfig {
+    /** Route stays reachable while the user still has a temporary password (me, change-password). */
+    allowTempPassword?: boolean;
+  }
   interface FastifyRequest {
     user?: SessionUser;
   }
@@ -50,6 +54,14 @@ export const authPlugin = fp(async (app) => {
 
   app.decorate("guard", (...roles) => async (req) => {
     await app.authenticate(req);
-    if (roles.length > 0 && !roles.includes((req.user as SessionUser).role)) throw forbidden();
+    const user = req.user as SessionUser;
+    // A user on a temporary password can do nothing but change it (enforced here, not only in the UI).
+    if (user.mustChangePassword && !req.routeOptions.config.allowTempPassword)
+      throw new AppError(
+        403,
+        "PASSWORD_CHANGE_REQUIRED",
+        "You must change your temporary password first",
+      );
+    if (roles.length > 0 && !roles.includes(user.role)) throw forbidden();
   });
 });

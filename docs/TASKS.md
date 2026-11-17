@@ -159,6 +159,19 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 - Returned leads get `lastActivityAt = now`, so a returned lead is not "stale" the moment it re-enters the pool (same as the prototype, where any history entry counts).
 
+### T2.3 note
+
+`guard()` now returns 403 `PASSWORD_CHANGE_REQUIRED` for any user with `mustChangePassword` on every route except those marked `config: { allowTempPassword: true }` (`/auth/me`, `/auth/change-password`; `/auth/logout` is unguarded). Login still succeeds so the UI can show the change screen. `POST /api/auth/change-password` {currentPassword, newPassword}: new password min 10 chars, must differ from the current one; wrong current → 422 `INVALID_CURRENT_PASSWORD`, limited to 5 failures/15 min per user (429). Applies to admins too. Verified by mutation (3 tests fail without the check). 6 tests.
+
+- **Gap:** changing a password does not end the user's _other_ sessions (stateless JWT; same root cause as the logout gap).
+- **Gap:** no "forgot password" or admin password reset exists; a locked-out employee currently cannot be recovered except by deactivating them and creating a new account (their email is then taken). Not in the spec; tell me if you want one.
+
+## Phase 2 summary (Team management) — complete
+
+**Done:** create/list employees with a one-time temporary password, deactivate/reactivate with race-free last-employee protection and full rollback, forced first-login password change. 102 tests total (24 new in this phase), all against a real Postgres. Mutation-checked: the row lock, the forced-change gate.
+**Untested:** the temporary password is shown to the admin on screen only; there is no email/SMS delivery path to test.
+**Known gaps:** password reset/recovery missing (above); other sessions survive a password change.
+
 ## Phase 1 summary (Database and auth) — complete
 
 **Done:** schema + migrations with DB-level rules, seed, login/logout/me, role guard, rate limiting/headers/CORS. 78 tests, all run against a real Postgres (fresh database per suite).
@@ -167,4 +180,4 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 ## Status at last checkpoint
 
-Done: Phase 0, Phase 1 (1.1–1.5), 3.1. Next: 2.1 (create/list employees). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.2 (lead list, scoped by role). \*`docker compose up` unverified (no Docker daemon in sandbox).
