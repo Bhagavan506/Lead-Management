@@ -141,6 +141,20 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 `app.guard(...roles)` preHandler factory in `plugins/auth.ts`: 401 when not signed in, 403 for the wrong role, no roles = any signed-in user. Role and active flag are read from the DB on every request (a demoted or deactivated user is affected immediately; tested). Admin-only routes will use `app.guard("ADMIN")`, employee work routes `app.guard("EMPLOYEE")` (so admins are read-only on lead work, rule 4). Tested with throwaway probe routes since the real admin routes arrive in Phase 2. 7 tests.
 
+### T1.5 note
+
+- **Login limiter** (`lib/failure-limiter.ts`, in-memory sliding window, counts _failures only_): 5 failures per IP+email and 20 per IP, per 15 min (env-configurable). Blocked clients get 429 + `Retry-After`, checked before any password hashing, and a correct password is also refused while blocked. Success resets the account counter; 422 validation errors are not counted.
+- `X-Forwarded-For` is ignored unless `TRUST_PROXY=true`, otherwise a client could dodge the limit by rotating the header. **Must be set to true behind a reverse proxy**, or every user shares the proxy's IP and one attacker can lock everyone out via the per-IP cap.
+- `@fastify/helmet` default headers; `@fastify/cors` allows only the origins in `CORS_ORIGIN` (comma list), with credentials.
+- Verified by mutation: removing the failure recording makes 4 tests fail.
+- **Limit:** counters are per API process and reset on restart. Fine for one instance; with several instances the effective limit multiplies (a shared store would be needed).
+
+## Phase 1 summary (Database and auth) — complete
+
+**Done:** schema + migrations with DB-level rules, seed, login/logout/me, role guard, rate limiting/headers/CORS. 78 tests, all run against a real Postgres (fresh database per suite).
+**Untested here:** `docker compose up`; Node 20 (sandbox runs 22); more than one API instance.
+**Known gaps:** (1) logout cannot revoke an already-copied JWT until it expires (needs a token-version column; owner has not asked for it); (2) rate-limit counters are in memory; (3) no password-reset flow exists and none is specified; (4) `SameSite=Strict` requires web and API on the same site.
+
 ## Status at last checkpoint
 
-Done: 0.1, 0.2*, 0.3, 1.1, 3.1, 1.2, 1.3, 1.4. Next: 1.5 (rate limit, headers, CORS). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: Phase 0, Phase 1 (1.1–1.5), 3.1. Next: 2.1 (create/list employees). \*`docker compose up` unverified (no Docker daemon in sandbox).

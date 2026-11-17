@@ -3,7 +3,8 @@ import { eq, sql } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { users } from "../db/schema.js";
-import { unauthorized } from "../errors.js";
+import { tooManyRequests, unauthorized } from "../errors.js";
+import { FailureLimiter } from "../lib/failure-limiter.js";
 import { SESSION_COOKIE, durationToSeconds, signSession } from "../lib/tokens.js";
 import type { SessionUser } from "../plugins/auth.js";
 
@@ -33,8 +34,21 @@ export async function authRoutes(app: FastifyInstance) {
     sameSite: "strict" as const,
   };
 
+  const windowMs = app.config.LOGIN_WINDOW_MINUTES * 60_000;
+  const perAccount = new FailureLimiter(app.config.LOGIN_MAX_FAILURES_PER_ACCOUNT, windowMs);
+  const perIp = new FailureLimiter(app.config.LOGIN_MAX_FAILURES_PER_IP, windowMs);
+
   app.post("/login", async (req, reply) => {
     const { email, password } = loginBody.parse(req.body);
+    const accountKey = `${req.ip}|${email.toLowerCase()}`;
+    const ipKey = req.ip;
+
+    // Checked before any password work, so a blocked client cannot burn CPU on argon2.
+    const wait = Math.max(perAccount.retryAfterSeconds(accountKey), perIp.retryAfterSeconds(ipKey));
+    if (wait > 0) {
+      reply.header("Retry-After", String(wait));
+      throw tooManyRequests(wait);
+    }
     const [row] = await app.db
       .select()
       .from(users)
@@ -42,7 +56,12 @@ export async function authRoutes(app: FastifyInstance) {
 
     const ok = await argon2.verify(row?.passwordHash ?? (await getDummyHash()), password);
     // Same response for unknown email, wrong password and deactivated account.
-    if (!row || !ok || !row.isActive) throw unauthorized("Invalid email or password");
+    if (!row || !ok || !row.isActive) {
+      perAccount.fail(accountKey);
+      perIp.fail(ipKey);
+      throw unauthorized("Invalid email or password");
+    }
+    perAccount.reset(accountKey);
 
     const token = await signSession(row.id, app.config.JWT_SECRET, app.config.JWT_EXPIRES_IN);
     reply.setCookie(SESSION_COOKIE, token, {

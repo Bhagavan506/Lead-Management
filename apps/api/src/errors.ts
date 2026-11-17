@@ -15,3 +15,5 @@ export const unauthorized = (message = "Authentication required") =>
 export const forbidden = (message = "You do not have access to this resource") =>
   new AppError(403, "FORBIDDEN", message);
 export const notFound = (message = "Not found") => new AppError(404, "NOT_FOUND", message);
+export const tooManyRequests = (retryAfterSeconds: number) =>
+  new AppError(429, "RATE_LIMITED", "Too many attempts. Try again later.", { retryAfterSeconds });

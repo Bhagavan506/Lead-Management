@@ -11,7 +11,17 @@ const schema = z
       .enum(["true", "false"])
       .default("false")
       .transform((v) => v === "true"),
+    // Comma-separated list of allowed browser origins.
     CORS_ORIGIN: z.string().default("http://localhost:5173"),
+    // Set true only when running behind a reverse proxy you control, so client IPs are read correctly.
+    TRUST_PROXY: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((v) => v === "true"),
+    // Failed-login limits inside LOGIN_WINDOW_MINUTES: per IP+email, and per IP across all emails.
+    LOGIN_MAX_FAILURES_PER_ACCOUNT: z.coerce.number().int().positive().default(5),
+    LOGIN_MAX_FAILURES_PER_IP: z.coerce.number().int().positive().default(20),
+    LOGIN_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
     DEFAULT_COUNTRY_CODE: z.string().length(2).default("IN"),
     APP_TIMEZONE: z.string().default("Asia/Kolkata"),
     WHATSAPP_PROVIDER: z.enum(["mock", "meta"]).default("mock"),

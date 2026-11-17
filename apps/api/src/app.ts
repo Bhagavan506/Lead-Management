@@ -1,4 +1,6 @@
 import cookie from "@fastify/cookie";
+import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
 import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import type { Config } from "./config.js";
@@ -9,6 +11,7 @@ import { authRoutes } from "./routes/auth.js";
 
 export function buildApp(config: Config, db: Db): FastifyInstance {
   const app = Fastify({
+    trustProxy: config.TRUST_PROXY,
     logger:
       config.NODE_ENV === "test"
         ? false
@@ -17,6 +20,15 @@ export function buildApp(config: Config, db: Db): FastifyInstance {
 
   app.decorate("config", config);
   app.decorate("db", db);
+  app.register(helmet);
+  app.register(cors, {
+    origin: config.CORS_ORIGIN.split(",")
+      .map((o) => o.trim())
+      .filter(Boolean),
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    maxAge: 600,
+  });
   app.register(cookie);
   app.register(authPlugin);
 
