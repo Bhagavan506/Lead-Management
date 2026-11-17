@@ -120,3 +120,11 @@ Owner said "go" without answering the open questions, so defaults apply:
 ### T1.1 note
 
 Schema in `apps/api/src/db/schema.ts`; migrations `0000_init_schema` (generated) and `0001_activities_append_only` (custom trigger). Beyond the prompt's model (all agreed in the planning decisions): `users.must_change_password`, `activities.meta`, `leads.last_activity_at`, `reminder_log.kind` with a _partial_ unique index so only SCHEDULED rows are limited to one per employee per day. Enforced in the database, not just code: E.164 phone check, lost-reason-iff-LOST check, case-insensitive unique email, append-only activities (UPDATE/DELETE/TRUNCATE blocked by trigger). 10 tests run against a fresh database per run (`src/test/db.ts`).
+
+### T3.1 note (executed out of order, before 1.2, by agreement)
+
+`normalizePhone(input, defaultCountry)` in `apps/api/src/lib/phone.ts`, built on `libphonenumber-js` (full metadata, strict `isValid()`). Returns E.164 or null. Default country is a parameter fed from `DEFAULT_COUNTRY_CODE`. Covers spaces, dashes, dots, brackets, leading 0, `+` prefix, `00` prefix, other countries with explicit prefix, junk and non-strings. Note: strict validity means numbers that merely look plausible (e.g. wrong length or unassigned ranges) are rejected as invalid on upload.
+
+## Status at last checkpoint
+
+Done: 0.1, 0.2*, 0.3, 1.1, 3.1. Next: 1.2 (seed), 1.3 (login). \*`docker compose up` unverified (no Docker daemon in sandbox).
