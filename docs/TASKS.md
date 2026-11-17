@@ -129,6 +129,14 @@ Schema in `apps/api/src/db/schema.ts`; migrations `0000_init_schema` (generated)
 
 `pnpm db:seed` (root) → `apps/api/src/db/seed.ts`. Admin `admin@demo.com` + Priya, Rohan, Anita (`@demo.com`), 9 leads and 20 history entries mirroring the prototype (follow-up dates relative to today in `APP_TIMEZONE`). Password comes from `SEED_PASSWORD` (not hardcoded; prototype's `admin123`/`1234` deliberately not used). Refuses to run when `NODE_ENV=production`. Idempotent: users by email, leads by phone, history only written when a lead has none. Prototype's note text "Wants pricing for 20 seats" is stored as "Note: …" to match how notes are written.
 
+### T1.3 note
+
+Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS256 JWT (`jose`) in cookie `lb_session`: HttpOnly, SameSite=Strict, Path=/, Secure per `COOKIE_SECURE` (config refuses `COOKIE_SECURE=false` or the example secret when `NODE_ENV=production`). Login returns one generic 401 for unknown email, wrong password and deactivated account, and always runs an argon2 verify (dummy hash for unknown emails) so timing does not reveal accounts. The user is reloaded from the DB on every request, so deactivation takes effect immediately. Validation errors return **422**; all errors share `{ error: { code, message, details? } }`. 18 auth tests, incl. expired token, wrong-secret token, tampered token, `alg=none`, deactivated mid-session. Verified against the real server with curl.
+
+- **Known gap (stateless JWT):** logout clears the cookie in the browser but cannot revoke a token that was already copied; it stays valid until it expires (default 8h). Fixing it needs a token-version column (data-model change), so deferred; say if you want it.
+- **Bug found and fixed during the real-server check:** `.env` was only read from `apps/api`; now loaded from the repo root regardless of cwd.
+- `SameSite=Strict` means the web app and API must be same-site (same registrable domain) in production. Revisit when hosting is chosen (10.5).
+
 ## Status at last checkpoint
 
-Done: 0.1, 0.2*, 0.3, 1.1, 3.1, 1.2. Next: 1.3 (login). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: 0.1, 0.2*, 0.3, 1.1, 3.1, 1.2, 1.3. Next: 1.4 (role guard). \*`docker compose up` unverified (no Docker daemon in sandbox).
