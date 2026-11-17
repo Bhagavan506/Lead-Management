@@ -8,6 +8,7 @@ import type { Db } from "./db/client.js";
 import { AppError } from "./errors.js";
 import { authPlugin } from "./plugins/auth.js";
 import { authRoutes } from "./routes/auth.js";
+import { userRoutes } from "./routes/users.js";
 
 export function buildApp(config: Config, db: Db): FastifyInstance {
   const app = Fastify({
@@ -63,6 +64,7 @@ export function buildApp(config: Config, db: Db): FastifyInstance {
 
   app.get("/health", async () => ({ status: "ok" }));
   app.register(authRoutes, { prefix: "/api/auth" });
+  app.register(userRoutes, { prefix: "/api/users" });
 
   return app;
 }

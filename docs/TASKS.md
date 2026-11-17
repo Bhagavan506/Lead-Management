@@ -149,6 +149,10 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 - Verified by mutation: removing the failure recording makes 4 tests fail.
 - **Limit:** counters are per API process and reset on restart. Fine for one instance; with several instances the effective limit multiplies (a shared store would be needed).
 
+### T2.1 note
+
+`GET /api/users` and `POST /api/users` (admin only). Create takes name, email, phone (normalized to E.164 with `DEFAULT_COUNTRY_CODE`; invalid → 422), always creates role EMPLOYEE (a `role` field in the body is ignored), duplicate email (any case) → 409 `EMAIL_TAKEN`. Temporary password: 14 chars from a no-lookalike alphabet via `crypto.randomInt`, returned once with `Cache-Control: no-store`, stored only as an argon2 hash, account flagged `mustChangePassword`. List returns `openLeads` per user and never any hash. **Delivery of the password to the employee is manual** (admin reads it off the screen), since nothing in the spec covers email or SMS. 9 tests.
+
 ## Phase 1 summary (Database and auth) — complete
 
 **Done:** schema + migrations with DB-level rules, seed, login/logout/me, role guard, rate limiting/headers/CORS. 78 tests, all run against a real Postgres (fresh database per suite).
