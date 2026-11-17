@@ -4,6 +4,7 @@ import { AppError } from "../errors.js";
 import { CsvFileError, parseLeadCsv } from "../lib/csv-leads.js";
 import type { SessionUser } from "../plugins/auth.js";
 import { assignLead } from "../services/lead-assign.js";
+import { addNote, logCall, recordContactEvent, setFollowUp } from "../services/lead-actions.js";
 import { changeStatus } from "../services/lead-status.js";
 import { autoAssignLeads } from "../services/lead-auto-assign.js";
 import { uploadLeads, type UploadMode } from "../services/lead-upload.js";
@@ -49,6 +50,22 @@ const statusBody = z.object({
     .enum(["PRICE", "NO_RESPONSE", "CHOSE_COMPETITOR", "WRONG_CONTACT", "NOT_INTERESTED", "OTHER"])
     .optional(),
 });
+
+const callBody = z.object({ outcome: z.enum(["ANSWERED", "NO_ANSWER", "BUSY", "WRONG_NUMBER"]) });
+const noteBody = z.object({ text: z.string().trim().min(1).max(2000) });
+const followUpBody = z.object({
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine(
+      (d) =>
+        !Number.isNaN(Date.parse(`${d}T00:00:00Z`)) &&
+        new Date(`${d}T00:00:00Z`).toISOString().startsWith(d),
+      "Not a real date",
+    )
+    .nullable(),
+});
+const contactBody = z.object({ kind: z.enum(["CALL", "WHATSAPP"]) });
 
 const assignBody = z.object({ ownerId: z.string().uuid().nullable() });
 
@@ -111,5 +128,43 @@ export async function leadRoutes(app: FastifyInstance) {
     const user = req.user as SessionUser;
     const { changed } = await changeStatus(app.db, user, id, status, lostReason);
     return { changed, ...(await getLeadDetail(app.db, user, id)) };
+  });
+
+  const work = { preHandler: app.guard("EMPLOYEE") };
+
+  app.post("/:id/calls", work, async (req) => {
+    const { id } = idParams.parse(req.params);
+    const { outcome } = callBody.parse(req.body);
+    const user = req.user as SessionUser;
+    await logCall(app.db, user, id, outcome, app.config.APP_TIMEZONE);
+    return getLeadDetail(app.db, user, id);
+  });
+
+  app.post("/:id/notes", work, async (req) => {
+    const { id } = idParams.parse(req.params);
+    const { text } = noteBody.parse(req.body);
+    const user = req.user as SessionUser;
+    await addNote(app.db, user, id, text);
+    return getLeadDetail(app.db, user, id);
+  });
+
+  app.patch("/:id/follow-up", work, async (req) => {
+    const { id } = idParams.parse(req.params);
+    const { date } = followUpBody.parse(req.body);
+    const user = req.user as SessionUser;
+    const result = await setFollowUp(app.db, user, id, date);
+    if (result === "CLOSED")
+      throw new AppError(422, "LEAD_CLOSED", "Won and Lost leads cannot have a follow-up date", [
+        { path: "date", message: "Reopen the lead first" },
+      ]);
+    return { changed: result === "CHANGED", ...(await getLeadDetail(app.db, user, id)) };
+  });
+
+  app.post("/:id/contact-events", work, async (req) => {
+    const { id } = idParams.parse(req.params);
+    const { kind } = contactBody.parse(req.body);
+    const user = req.user as SessionUser;
+    await recordContactEvent(app.db, user, id, kind);
+    return getLeadDetail(app.db, user, id);
   });
 }
