@@ -82,6 +82,7 @@ describe.skipIf(!hasDb)("reminder settings, Send now, log and employee panel (9.
       expect(res.statusCode).toBe(200);
       const { employees, today } = res.json();
       expect(today).toBe(day());
+      expect(res.json().provider).toBe("mock");
       const priya = employees.find((e: { name: string }) => e.name === "Priya Sharma");
       expect(priya.leads).toEqual([
         { id: w.lid["Aarav Mehta"], name: "Aarav Mehta", followUpDate: day(-1), overdue: true },

@@ -6,11 +6,11 @@ import { LoginPage } from "./pages/Login";
 import { ActivityPage } from "./pages/admin/Activity";
 import { AllLeadsPage } from "./pages/admin/AllLeads";
 import { OverviewPage } from "./pages/admin/Overview";
+import { RemindersPage } from "./pages/admin/Reminders";
 import { TeamPage } from "./pages/admin/Team";
 import { UploadPage } from "./pages/admin/Upload";
 import { FollowUpsPage } from "./pages/employee/FollowUps";
 import { MyLeadsPage } from "./pages/employee/MyLeads";
-import { Placeholder } from "./pages/Placeholder";
 
 export function App() {
   return (
@@ -26,7 +26,7 @@ export function App() {
           <Route path="leads" element={<AllLeadsPage />} />
           <Route path="upload" element={<UploadPage />} />
           <Route path="team" element={<TeamPage />} />
-          <Route path="reminders" element={<Placeholder title="Reminders" />} />
+          <Route path="reminders" element={<RemindersPage />} />
           <Route path="activity" element={<ActivityPage />} />
         </Route>
       </Route>

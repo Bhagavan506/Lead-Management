@@ -95,5 +95,20 @@ export const emptyEmployeeData = {
 };
 
 function defaults(): Record<string, Handler> {
-  return { ...emptyOverview, ...emptyEmployeeData };
+  return { ...emptyOverview, ...emptyEmployeeData, ...emptyReminders };
 }
+
+export const emptyReminders = {
+  "GET /api/reminders/mine": () => ({
+    json: { enabled: false, time: "09:00", phone: null, recent: [] },
+  }),
+  "GET /api/reminders/due": () => ({
+    json: { today: "2031-01-10", provider: "mock", employees: [] },
+  }),
+  "GET /api/reminders/log?page=1&pageSize=20": () => ({
+    json: { items: [], page: 1, totalPages: 1, total: 0 },
+  }),
+  "GET /api/settings": () => ({
+    json: { staleDays: 2, reminderEnabled: false, reminderTime: "09:00" },
+  }),
+};

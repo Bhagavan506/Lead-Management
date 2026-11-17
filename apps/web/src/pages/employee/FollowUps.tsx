@@ -1,3 +1,4 @@
+import { ReminderPanel } from "../../components/ReminderPanel";
 import { EmployeeActions } from "../../components/EmployeeActions";
 import { LeadCard } from "../../components/LeadCard";
 import { useLeadDrawer } from "../../components/useLeadDrawer";
@@ -11,6 +12,7 @@ export function FollowUpsPage() {
   const { open, drawer } = useLeadDrawer((d) => <EmployeeActions detail={d} />);
   return (
     <>
+      <ReminderPanel />
       <QueryState query={leads}>
         {leads.data && leads.data.leads.length === 0 ? (
           <Panel>

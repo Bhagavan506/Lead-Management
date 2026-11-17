@@ -36,7 +36,7 @@ export async function reminderRoutes(app: FastifyInstance) {
       })),
       message: buildReminder(e.name, e.due, today).text,
     }));
-    return { today, employees };
+    return { today, provider: app.whatsapp.name, employees };
   });
 
   app.post("/send-now", admin, async () => {
