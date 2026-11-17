@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import fp from "fastify-plugin";
 import { users, type User } from "../db/schema.js";
-import { unauthorized } from "../errors.js";
+import { forbidden, unauthorized } from "../errors.js";
 import { SESSION_COOKIE, verifySession } from "../lib/tokens.js";
 
 export type SessionUser = Pick<
@@ -16,6 +16,14 @@ declare module "fastify" {
   interface FastifyInstance {
     /** preHandler: requires a valid session for an active user. */
     authenticate: (req: import("fastify").FastifyRequest) => Promise<void>;
+    /**
+     * preHandler factory: valid session for an active user, and (if roles are given) one of those roles.
+     * 401 when not signed in, 403 when signed in with the wrong role. The role is read from the
+     * database on every request, never from the token.
+     */
+    guard: (
+      ...roles: SessionUser["role"][]
+    ) => (req: import("fastify").FastifyRequest) => Promise<void>;
   }
 }
 
@@ -38,5 +46,10 @@ export const authPlugin = fp(async (app) => {
       .where(eq(users.id, id));
     if (!row || !row.isActive) throw unauthorized();
     req.user = row;
+  });
+
+  app.decorate("guard", (...roles) => async (req) => {
+    await app.authenticate(req);
+    if (roles.length > 0 && !roles.includes((req.user as SessionUser).role)) throw forbidden();
   });
 });

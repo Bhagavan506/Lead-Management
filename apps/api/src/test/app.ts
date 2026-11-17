@@ -14,7 +14,11 @@ export interface TestApp {
 }
 
 /** Fresh database + seeded demo data + app instance. */
-export async function createTestApp(env: Record<string, string> = {}): Promise<TestApp> {
+export async function createTestApp(
+  env: Record<string, string> = {},
+  /** Mount extra routes (e.g. guarded probes) before the app becomes ready. */
+  configure?: (app: FastifyInstance) => void,
+): Promise<TestApp> {
   const t = await createTestDb();
   await seed(t.db, { password: TEST_PASSWORD, defaultCountry: "IN", timeZone: "Asia/Kolkata" });
   const config = loadConfig({
@@ -24,6 +28,8 @@ export async function createTestApp(env: Record<string, string> = {}): Promise<T
     ...env,
   });
   const app = buildApp(config, t.db);
+  // Registered (not called directly) so it runs after the auth plugin has decorated the app.
+  if (configure) app.register(async (instance) => configure(instance));
   await app.ready();
   return {
     app,

@@ -57,7 +57,7 @@ export async function authRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  app.get("/me", { preHandler: app.authenticate }, async (req) => ({
+  app.get("/me", { preHandler: app.guard() }, async (req) => ({
     user: publicUser(req.user as SessionUser),
   }));
 }

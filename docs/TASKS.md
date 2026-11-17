@@ -137,6 +137,10 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 - **Bug found and fixed during the real-server check:** `.env` was only read from `apps/api`; now loaded from the repo root regardless of cwd.
 - `SameSite=Strict` means the web app and API must be same-site (same registrable domain) in production. Revisit when hosting is chosen (10.5).
 
+### T1.4 note
+
+`app.guard(...roles)` preHandler factory in `plugins/auth.ts`: 401 when not signed in, 403 for the wrong role, no roles = any signed-in user. Role and active flag are read from the DB on every request (a demoted or deactivated user is affected immediately; tested). Admin-only routes will use `app.guard("ADMIN")`, employee work routes `app.guard("EMPLOYEE")` (so admins are read-only on lead work, rule 4). Tested with throwaway probe routes since the real admin routes arrive in Phase 2. 7 tests.
+
 ## Status at last checkpoint
 
-Done: 0.1, 0.2*, 0.3, 1.1, 3.1, 1.2, 1.3. Next: 1.4 (role guard). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: 0.1, 0.2*, 0.3, 1.1, 3.1, 1.2, 1.3, 1.4. Next: 1.5 (rate limit, headers, CORS). \*`docker compose up` unverified (no Docker daemon in sandbox).
