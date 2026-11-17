@@ -166,6 +166,17 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 - **Gap:** changing a password does not end the user's _other_ sessions (stateless JWT; same root cause as the logout gap).
 - **Gap:** no "forgot password" or admin password reset exists; a locked-out employee currently cannot be recovered except by deactivating them and creating a new account (their email is then taken). Not in the spec; tell me if you want one.
 
+### T3.2 note
+
+`GET /api/leads` (any signed-in role). Filters: `owner` (user id or `none`), `status`, `stale`, `search`, `page`, `pageSize` (default 25, max 100); bad values → 422. **Scoping:** `services/lead-access.ts → leadScope(user)` is the single place rule 3 lives (employee ⇒ `owner_id = me`); it is part of the SQL WHERE of the list _and_ the count, so totals cannot leak other people's lead counts. **Every later lead query (detail, status, follow-up, calls, notes, contact events) must use it.** Employees cannot see the unassigned pool at all. A foreign `owner` filter is ANDed with the scope, so it returns an empty page rather than an error.
+
+- Search: name and company (case-insensitive, `%`/`_` escaped so they are literal), plus phone when the term has 3+ digits (any format).
+- Stale (rule 9) is computed in SQL from `lastActivityAt` and the `staleDays` setting; Won/Lost are never stale. Each row carries `isStale`, `ownerName`, `lastActivityText` (newest history line).
+- Order: admins newest-first; employees open-before-closed, soonest follow-up first (nulls last), as in the prototype. Ties break on id so pages are stable.
+- Verified by mutation: removing the scope from the query fails 6 tests. 18 tests, including a sweep over every employee × many filter/search/paging combinations asserting only own leads are returned.
+- **Open point for 8.3:** the prototype's Follow-ups tab shows only leads with a follow-up date, and "My leads" a due count. With server-side paging the UI may need a `followUp=due|set` filter. It is not in the spec'd filter list, so I have not added it; will raise at 8.3 rather than invent it now.
+- Sandbox note: the embedded Postgres stops between sessions; restart with `node scripts/dev-postgres.mjs /tmp/leadbook-pg`.
+
 ## Phase 2 summary (Team management) — complete
 
 **Done:** create/list employees with a one-time temporary password, deactivate/reactivate with race-free last-employee protection and full rollback, forced first-login password change. 102 tests total (24 new in this phase), all against a real Postgres. Mutation-checked: the row lock, the forced-change gate.
@@ -180,4 +191,4 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 ## Status at last checkpoint
 
-Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.2 (lead list, scoped by role). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.3 (lead detail with timeline). \*`docker compose up` unverified (no Docker daemon in sandbox).
