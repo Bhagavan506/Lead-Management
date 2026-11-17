@@ -10,6 +10,8 @@ export interface LeadListQuery {
   owner?: string; // user id, or "none" for unassigned
   status?: (typeof leads.$inferSelect)["status"];
   stale?: boolean;
+  /** due = open with a follow-up on or before `today`; scheduled = open with any follow-up date. */
+  followUp?: "due" | "scheduled";
   search?: string;
   page: number;
   pageSize: number;
@@ -49,6 +51,7 @@ export async function listLeads(
   user: Pick<SessionUser, "id" | "role">,
   q: LeadListQuery,
   now: Date = new Date(),
+  today: string = now.toISOString().slice(0, 10),
 ) {
   const staleDays = await getStaleDays(db);
   const isStale = staleExpr(staleDays, now);
@@ -59,6 +62,14 @@ export async function listLeads(
   if (q.status) conditions.push(eq(leads.status, q.status));
   if (q.stale === true) conditions.push(isStale);
   if (q.stale === false) conditions.push(sql`not ${isStale}`);
+  if (q.followUp === "scheduled")
+    conditions.push(
+      sql`(${leads.status} not in ('WON','LOST') and ${leads.followUpDate} is not null)`,
+    );
+  if (q.followUp === "due")
+    conditions.push(
+      sql`(${leads.status} not in ('WON','LOST') and ${leads.followUpDate} <= ${today})`,
+    );
 
   const term = q.search?.trim();
   if (term) {
@@ -143,4 +154,21 @@ export async function getLeadDetail(
     timelineTruncated: rows.length > TIMELINE_LIMIT,
     staleDays,
   };
+}
+
+/** Counts for the signed-in employee's own leads (leadScope keeps it to theirs). */
+export async function mySummary(db: Db, user: Pick<SessionUser, "id" | "role">, today: string) {
+  const [r] = await db
+    .select({
+      total: count(),
+      notContacted: sql<number>`count(*) filter (where ${leads.status} = 'NEW')`.mapWith(Number),
+      followUpsDue:
+        sql<number>`count(*) filter (where ${leads.status} not in ('WON','LOST') and ${leads.followUpDate} <= ${today})`.mapWith(
+          Number,
+        ),
+      won: sql<number>`count(*) filter (where ${leads.status} = 'WON')`.mapWith(Number),
+    })
+    .from(leads)
+    .where(leadScope(user));
+  return { ...(r as NonNullable<typeof r>), today };
 }

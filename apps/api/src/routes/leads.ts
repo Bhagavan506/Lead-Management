@@ -8,7 +8,8 @@ import { addNote, logCall, recordContactEvent, setFollowUp } from "../services/l
 import { changeStatus } from "../services/lead-status.js";
 import { autoAssignLeads } from "../services/lead-auto-assign.js";
 import { uploadLeads, type UploadMode } from "../services/lead-upload.js";
-import { getLeadDetail, listLeads } from "../services/leads.js";
+import { getLeadDetail, listLeads, mySummary } from "../services/leads.js";
+import { dateInTz } from "../lib/dates.js";
 
 const listQuery = z.object({
   owner: z.union([z.literal("none"), z.string().uuid()]).optional(),
@@ -17,6 +18,7 @@ const listQuery = z.object({
     .enum(["true", "false"])
     .transform((v) => v === "true")
     .optional(),
+  followUp: z.enum(["due", "scheduled"]).optional(),
   search: z.string().trim().max(100).optional(),
   page: z.coerce.number().int().min(1).max(100_000).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
@@ -75,8 +77,19 @@ export async function leadRoutes(app: FastifyInstance) {
   // Any signed-in role; what they get back is decided by the query-layer scope, not by this guard.
   app.get("/", { preHandler: app.guard() }, async (req) => {
     const q = listQuery.parse(req.query);
-    return listLeads(app.db, req.user as SessionUser, q);
+    return listLeads(
+      app.db,
+      req.user as SessionUser,
+      q,
+      new Date(),
+      dateInTz(app.config.APP_TIMEZONE),
+    );
   });
+
+  // The employee's own numbers for the My leads screen. Admins have /api/stats instead.
+  app.get("/summary", { preHandler: app.guard("EMPLOYEE") }, async (req) =>
+    mySummary(app.db, req.user as SessionUser, dateInTz(app.config.APP_TIMEZONE)),
+  );
 
   app.get("/:id", { preHandler: app.guard() }, async (req) => {
     const { id } = idParams.parse(req.params);
