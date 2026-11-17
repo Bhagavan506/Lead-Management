@@ -21,14 +21,15 @@ export function Shell({ tabs }: { tabs: TabDef[] }) {
 
   return (
     <div className="min-h-screen pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-      <header className="flex items-center gap-2 border-b border-ln bg-sf px-4 py-3 sm:px-[18px]">
-        <h1 className="text-[19px] font-extrabold tracking-tight">Leadbook</h1>
-        <span className="rounded-md bg-ac2 px-2 py-0.5 font-extrabold text-ac">
+      <header className="flex items-center gap-1.5 border-b border-ln bg-sf px-3 py-3 sm:gap-2 sm:px-[18px]">
+        <h1 className="text-[17px] font-extrabold tracking-tight sm:text-[19px]">Leadbook</h1>
+        <span className="rounded-md bg-ac2 px-1.5 py-0.5 font-extrabold text-ac sm:px-2">
           {user.role === "ADMIN" ? "Admin" : "Employee"}
         </span>
         <span className="hidden min-w-0 truncate text-mu sm:block">{user.name}</span>
         <span className="flex-1" />
         <Button
+          className="px-2 sm:px-2.5"
           onClick={cycle}
           aria-label={`Theme: ${THEME_LABEL[theme]}. Change theme`}
           title="Change theme"
@@ -36,7 +37,7 @@ export function Shell({ tabs }: { tabs: TabDef[] }) {
           {THEME_LABEL[theme]}
         </Button>
         <Button
-          className="px-2.5"
+          className="px-2 sm:px-2.5"
           onClick={async () => {
             setOutError(false);
             try {

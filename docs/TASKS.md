@@ -61,7 +61,7 @@ Rule: one task at a time, in order. A task is `done` only when typecheck, lint a
 | 10.1                                                                                             | Playwright E2E: admin uploads, assigns, employee works a lead, admin sees activity                                   | E2E suite passes                                                                | done             |         |
 | 10.2                                                                                             | Authorization test matrix: employee vs every admin route; employee A vs employee B's lead (IDOR)                     | Matrix passes                                                                   | done             |         |
 | 10.3                                                                                             | Input validation and error-format review, request logging, dependency audit                                          | Review done, audit clean or documented                                          | done             |         |
-| 10.4                                                                                             | Mobile QA pass on every screen at 360, 390, 768 px, with fixes                                                       | All screens checked and fixed                                                   | todo             |         |
+| 10.4                                                                                             | Mobile QA pass on every screen at 360, 390, 768 px, with fixes                                                       | All screens checked and fixed                                                   | done             |         |
 | 10.5                                                                                             | Production Dockerfiles, deployment notes, database backup plan (**ask about hosting first**)                         | Images build; notes and backup plan written                                     | todo             |         |
 | 10.6                                                                                             | README, environment variable docs, final Progress log with known gaps                                                | Docs complete                                                                   | todo             |         |
 
@@ -345,6 +345,17 @@ All admin screens use the real API (no mock data in the app). Every screen has l
 - **Request logging:** Fastify's access log is on outside tests, with cookie and authorization headers redacted. Found and fixed: the default log line includes the full URL, so search terms (lead names, phone numbers) would have been logged. A `req` serializer now logs method, path and client address only (verified against a real Fastify logger).
 - **Dependency audit:** `pnpm audit --prod`: no known vulnerabilities. Full audit: 2 dev-only findings, left as is and documented: `picomatch` ReDoS via `typescript-eslint` (no patched version exists yet; lint tooling only) and an old `esbuild` via `drizzle-kit`'s loader (affects only a dev server that is not run; `drizzle-kit` is used offline for `generate`). Re-check at release time.
 - Not done: no per-route global rate limit beyond login (see known gaps).
+
+### T10.4 note (mobile QA)
+
+- `e2e/tests/mobile.spec.ts`: 12 screens (login, first-sign-in password change, admin overview / all leads / lead drawer / upload result / team / reminders / activity, employee leads / drawer / lost-reason picker / follow-ups) x 360, 390, 768 px x light and dark = 75 checks, with screenshots in `e2e/screenshots` (git-ignored). Each fails on sideways page scroll, anything outside the viewport, phone tap targets under 42 px, form text under 16 px, or placeholder/broken text (`undefined`, `NaN`, "built in a later task").
+- **Found and fixed:**
+  - The employee header overflowed at 360 px ("Sign out" cut off, page scrolled sideways) because the "Employee" badge is wider than "Admin"; tightened header spacing on phones.
+  - Overview (team, stale), Team, Reminders log and Upload issue tables only scrolled sideways on phones, but the spec says tables become labelled cards. Now `table.stack` + `data-label` (CSS only, DOM unchanged): each row is a card, first cell is the title, long text is stacked. Tables stay tables from 768 px.
+  - Activity rows and the name links/buttons in the Overview tables were 22-39 px tall; now 42 px.
+- Code-splitting: each screen is a lazy chunk. The main chunk is still ~530 kB (160 kB gzip); it is almost entirely react-dom, react-router and TanStack Query (app code is ~24 kB), so it was left, and the Vite size warning remains. Not reduced further without dropping a framework.
+- Trade-off: the stacked layout uses `display:block` on table parts, which some screen readers treat as losing table semantics. Not mitigated with ARIA roles; noted as a known gap.
+- Checked by the script, not by hand: 700-767 px (phone rules switch at 700, stacking at 767).
 
 ## Status at last checkpoint
 

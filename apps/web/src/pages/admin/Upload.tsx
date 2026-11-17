@@ -193,7 +193,7 @@ function IssueTable({ title, rows }: { title: string; rows: Issue[] }) {
     <div className="mt-3">
       <h4 className="mb-1 text-sm font-bold">{title}</h4>
       <TableWrap>
-        <table className="w-full min-w-[480px] border-collapse">
+        <table className="stack w-full border-collapse md:min-w-[480px]">
           <thead>
             <tr>
               {["Row", "Name", "Phone", "Why"].map((h) => (
@@ -206,10 +206,18 @@ function IssueTable({ title, rows }: { title: string; rows: Issue[] }) {
           <tbody>
             {rows.map((i) => (
               <tr key={`${i.row}-${i.phone}`}>
-                <td className={td}>{i.row}</td>
-                <td className={td}>{i.name || "—"}</td>
-                <td className={td}>{i.phone || "—"}</td>
-                <td className={td}>{i.reason}</td>
+                <td data-label="Row" className={td}>
+                  {i.row}
+                </td>
+                <td data-label="Name" className={td}>
+                  {i.name || "—"}
+                </td>
+                <td data-label="Phone" className={td}>
+                  {i.phone || "—"}
+                </td>
+                <td data-label="Why" className={td}>
+                  {i.reason}
+                </td>
               </tr>
             ))}
           </tbody>

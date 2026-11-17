@@ -187,7 +187,7 @@ export function TeamPage() {
           </Panel>
         ) : (
           <TableWrap>
-            <table className="w-full min-w-[640px] border-collapse">
+            <table className="stack w-full border-collapse md:min-w-[640px]">
               <thead>
                 <tr>
                   {["Employee", "WhatsApp", "Open leads", "Status", ""].map((h, i) => (
@@ -200,17 +200,21 @@ export function TeamPage() {
               <tbody>
                 {employees.map((u) => (
                   <tr key={u.id}>
-                    <td className={td}>
+                    <td data-label="Employee" className={td}>
                       <b>{u.name}</b>
                       <br />
                       <small className="text-mu">{u.email}</small>
                     </td>
-                    <td className={td}>{u.phone ?? "—"}</td>
-                    <td className={td}>{u.openLeads}</td>
-                    <td className={td}>
+                    <td data-label="WhatsApp" className={td}>
+                      {u.phone ?? "—"}
+                    </td>
+                    <td data-label="Open leads" className={td}>
+                      {u.openLeads}
+                    </td>
+                    <td data-label="Status" className={td}>
                       {u.isActive ? <span className="font-bold text-ok">Active</span> : "Inactive"}
                     </td>
-                    <td className={td}>
+                    <td data-label="" className={td}>
                       {u.isActive ? (
                         <Button aria-label={`Deactivate ${u.name}`} onClick={() => setConfirm(u)}>
                           Deactivate

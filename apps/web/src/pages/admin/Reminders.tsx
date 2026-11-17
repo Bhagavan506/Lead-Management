@@ -215,7 +215,7 @@ export function RemindersPage() {
           log.data && (
             <>
               <TableWrap>
-                <table className="w-full min-w-[640px] border-collapse">
+                <table className="stack w-full border-collapse md:min-w-[640px]">
                   <thead>
                     <tr>
                       {["When", "Employee", "Type", "Status", "Message"].map((h) => (
@@ -228,17 +228,24 @@ export function RemindersPage() {
                   <tbody>
                     {log.data.items.map((r) => (
                       <tr key={r.id}>
-                        <td className={td} title={dateTime(r.createdAt)}>
+                        <td data-label="When" className={td} title={dateTime(r.createdAt)}>
                           {ago(r.createdAt)}
                         </td>
-                        <td className={td}>{r.employeeName}</td>
-                        <td className={td}>{r.kind === "MANUAL" ? "Send now" : "Daily"}</td>
+                        <td data-label="Employee" className={td}>
+                          {r.employeeName}
+                        </td>
+                        <td data-label="Type" className={td}>
+                          {r.kind === "MANUAL" ? "Send now" : "Daily"}
+                        </td>
                         <td
+                          data-label="Status"
                           className={`${td} ${r.status === "FAILED" ? "font-bold text-bad" : ""}`}
                         >
                           {r.status.charAt(0) + r.status.slice(1).toLowerCase()}
                         </td>
-                        <td className={`${td} text-[13px]`}>{r.messageText}</td>
+                        <td data-label="Message" className={`${td} text-[13px]`}>
+                          {r.messageText}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -116,7 +116,7 @@ export function OverviewPage() {
           </Panel>
         ) : (
           <TableWrap>
-            <table className="w-full min-w-[640px] border-collapse">
+            <table className="stack w-full border-collapse md:min-w-[640px]">
               <thead>
                 <tr>
                   {[
@@ -138,23 +138,38 @@ export function OverviewPage() {
               <tbody>
                 {team.data?.employees.map((e) => (
                   <tr key={e.employeeId} className="hover:bg-bg">
-                    <td className={td}>
+                    <td data-label="Employee" className={td}>
                       <Link
-                        className="font-bold underline-offset-2 hover:underline"
+                        className="tap inline-flex items-center font-bold underline-offset-2 hover:underline"
                         to={`/admin/leads?owner=${e.employeeId}`}
                       >
                         {e.name}
                       </Link>
                     </td>
-                    <td className={td}>{e.assigned}</td>
-                    <td className={td}>{e.notContacted}</td>
-                    <td className={td}>{e.worked}</td>
-                    <td className={`${td} font-bold text-ok`}>{e.won}</td>
-                    <td className={td}>{e.lost}</td>
-                    <td className={`${td} ${e.overdue ? "font-bold text-bad" : ""}`}>
+                    <td data-label="Assigned" className={td}>
+                      {e.assigned}
+                    </td>
+                    <td data-label="Not yet contacted" className={td}>
+                      {e.notContacted}
+                    </td>
+                    <td data-label="Worked" className={td}>
+                      {e.worked}
+                    </td>
+                    <td data-label="Won" className={`${td} font-bold text-ok`}>
+                      {e.won}
+                    </td>
+                    <td data-label="Lost" className={td}>
+                      {e.lost}
+                    </td>
+                    <td
+                      data-label="Overdue"
+                      className={`${td} ${e.overdue ? "font-bold text-bad" : ""}`}
+                    >
                       {e.overdue}
                     </td>
-                    <td className={td}>{ago(e.lastActivityAt)}</td>
+                    <td data-label="Last activity" className={td}>
+                      {ago(e.lastActivityAt)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -261,7 +276,7 @@ function StalePanel({
         ) : (
           <>
             <TableWrap>
-              <table className="w-full min-w-[520px] border-collapse">
+              <table className="stack w-full border-collapse md:min-w-[520px]">
                 <thead>
                   <tr>
                     {["Lead", "Owner", "Status", "Last activity"].map((h) => (
@@ -274,17 +289,23 @@ function StalePanel({
                 <tbody>
                   {stale.data?.leads.map((l) => (
                     <tr key={l.id} className="hover:bg-bg">
-                      <td className={td}>
+                      <td data-label="Lead" className={td}>
                         <button
-                          className="cursor-pointer font-bold underline-offset-2 hover:underline"
+                          className="tap inline-flex cursor-pointer items-center font-bold underline-offset-2 hover:underline"
                           onClick={() => onOpen(l.id)}
                         >
                           {l.name}
                         </button>
                       </td>
-                      <td className={td}>{l.ownerName ?? "Unassigned"}</td>
-                      <td className={td}>{STATUS_LABEL[l.status]}</td>
-                      <td className={`${td} font-bold text-bad`}>{ago(l.lastActivityAt)}</td>
+                      <td data-label="Owner" className={td}>
+                        {l.ownerName ?? "Unassigned"}
+                      </td>
+                      <td data-label="Status" className={td}>
+                        {STATUS_LABEL[l.status]}
+                      </td>
+                      <td data-label="Last activity" className={`${td} font-bold text-bad`}>
+                        {ago(l.lastActivityAt)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

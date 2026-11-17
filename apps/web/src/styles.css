@@ -101,3 +101,72 @@ textarea {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/*
+ * Tables become labelled cards on phones: each row is a card, each cell shows its column name
+ * (from data-label) beside the value. The first cell is the card title. Wider screens keep the table.
+ */
+@media (max-width: 767px) {
+  table.stack,
+  table.stack tbody,
+  table.stack tr,
+  table.stack td {
+    display: block;
+  }
+  table.stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  table.stack tr {
+    padding: 6px 0;
+    border-bottom: 1px solid var(--ln);
+  }
+  table.stack tr:last-child {
+    border-bottom: 0;
+  }
+  table.stack td {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    border: 0;
+    padding: 3px 12px;
+    text-align: right;
+  }
+  table.stack td::before {
+    content: attr(data-label);
+    flex: none;
+    font-weight: 400;
+    color: var(--mu);
+    font-size: 13px;
+    text-align: left;
+  }
+  table.stack td[data-label=""]::before {
+    display: none;
+  }
+  table.stack td:first-child {
+    display: block;
+    padding-top: 6px;
+    text-align: left;
+    font-size: 15px;
+  }
+  table.stack td:first-child::before {
+    display: none;
+  }
+  /* long free text (messages, reasons) reads better stacked under its label */
+  table.stack td[data-label="Message"],
+  table.stack td[data-label="Why"] {
+    display: block;
+    text-align: left;
+  }
+  table.stack td[data-label="Message"]::before,
+  table.stack td[data-label="Why"]::before {
+    display: block;
+  }
+  table.stack td[data-label=""] {
+    justify-content: flex-start;
+    padding-bottom: 6px;
+  }
+}

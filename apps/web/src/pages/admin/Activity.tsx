@@ -42,7 +42,7 @@ export function ActivityPage() {
                 {feed.data.items.map((a) => (
                   <li key={a.id} className="border-b border-ln px-3 py-2 last:border-b-0">
                     <button
-                      className="block w-full cursor-pointer text-left"
+                      className="tap block w-full cursor-pointer text-left"
                       onClick={() => open(a.leadId)}
                     >
                       <span className="font-bold">{a.leadName}</span> <span>{a.text}</span>
