@@ -153,6 +153,12 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 `GET /api/users` and `POST /api/users` (admin only). Create takes name, email, phone (normalized to E.164 with `DEFAULT_COUNTRY_CODE`; invalid → 422), always creates role EMPLOYEE (a `role` field in the body is ignored), duplicate email (any case) → 409 `EMAIL_TAKEN`. Temporary password: 14 chars from a no-lookalike alphabet via `crypto.randomInt`, returned once with `Cache-Control: no-store`, stored only as an argon2 hash, account flagged `mustChangePassword`. List returns `openLeads` per user and never any hash. **Delivery of the password to the employee is manual** (admin reads it off the screen), since nothing in the spec covers email or SMS. 9 tests.
 
+### T2.2 note
+
+`POST /api/users/:id/deactivate` and `/reactivate` (admin only, employees only). Deactivation runs in one transaction: locks all active employee rows (`FOR UPDATE`) so the last-employee check is race-free, returns only open leads (not Won/Lost) to the pool with one "Moved back to unassigned pool" activity each (actor = admin, `meta.fromOwnerId`), keeps closed leads with their owner, then switches the account off (login and live sessions stop at once). Both calls are idempotent. Reactivation does **not** hand leads back (matches prototype: use Auto-assign). Errors: 409 `LAST_ACTIVE_EMPLOYEE`, 409 `NOT_AN_EMPLOYEE`, 404, 422 for a malformed id. Verified by mutation: without the lock the concurrency test fails 3/3 runs. A forced mid-transaction failure (DB trigger) proves full rollback. 9 tests.
+
+- Returned leads get `lastActivityAt = now`, so a returned lead is not "stale" the moment it re-enters the pool (same as the prototype, where any history entry counts).
+
 ## Phase 1 summary (Database and auth) — complete
 
 **Done:** schema + migrations with DB-level rules, seed, login/logout/me, role guard, rate limiting/headers/CORS. 78 tests, all run against a real Postgres (fresh database per suite).
