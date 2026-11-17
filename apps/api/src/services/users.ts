@@ -3,6 +3,7 @@ import { and, asc, count, eq, inArray, notInArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { activities, leads, users } from "../db/schema.js";
 import { AppError, notFound } from "../errors.js";
+import { lockActiveEmployees } from "./locks.js";
 import { generateTempPassword } from "../lib/password.js";
 
 const CLOSED = ["WON", "LOST"] as const;
@@ -70,12 +71,7 @@ export async function createEmployee(
  */
 export async function deactivateEmployee(db: Db, targetId: string, adminId: string) {
   return db.transaction(async (tx) => {
-    const active = await tx
-      .select({ id: users.id })
-      .from(users)
-      .where(and(eq(users.role, "EMPLOYEE"), eq(users.isActive, true)))
-      .orderBy(asc(users.id))
-      .for("update");
+    const active = await lockActiveEmployees(tx);
 
     const [target] = await tx
       .select(publicColumns)

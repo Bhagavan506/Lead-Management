@@ -3,6 +3,7 @@ import { z } from "zod";
 import { AppError } from "../errors.js";
 import { CsvFileError, parseLeadCsv } from "../lib/csv-leads.js";
 import type { SessionUser } from "../plugins/auth.js";
+import { assignLead } from "../services/lead-assign.js";
 import { uploadLeads, type UploadMode } from "../services/lead-upload.js";
 import { getLeadDetail, listLeads } from "../services/leads.js";
 
@@ -39,6 +40,8 @@ const uploadBody = z
         message: "Only allowed when mode is owner",
       });
   });
+
+const assignBody = z.object({ ownerId: z.string().uuid().nullable() });
 
 const idParams = z.object({ id: z.string().uuid() });
 
@@ -77,4 +80,13 @@ export async function leadRoutes(app: FastifyInstance) {
       return reply.status(200).send(report);
     },
   );
+
+  // Admin only. ownerId = an active employee's id, or null to move the lead back to the pool.
+  app.post("/:id/assign", { preHandler: app.guard("ADMIN") }, async (req) => {
+    const { id } = idParams.parse(req.params);
+    const { ownerId } = assignBody.parse(req.body);
+    const admin = req.user as SessionUser;
+    const { changed } = await assignLead(app.db, { id: admin.id }, id, ownerId);
+    return { changed, ...(await getLeadDetail(app.db, admin, id)) };
+  });
 }

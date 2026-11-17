@@ -1,8 +1,9 @@
-import { and, asc, count, eq, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
+import { and, count, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
-import { activities, leads, users } from "../db/schema.js";
+import { activities, leads } from "../db/schema.js";
 import { AppError } from "../errors.js";
 import type { ParsedCsv, RowIssue } from "../lib/csv-leads.js";
+import { lockActiveEmployees } from "./locks.js";
 
 export type UploadMode = { kind: "none" } | { kind: "split" } | { kind: "owner"; ownerId: string };
 
@@ -32,12 +33,7 @@ export async function uploadLeads(
   mode: UploadMode,
 ) {
   return db.transaction(async (tx) => {
-    const employees = await tx
-      .select({ id: users.id, name: users.name, createdAt: users.createdAt })
-      .from(users)
-      .where(and(eq(users.role, "EMPLOYEE"), eq(users.isActive, true)))
-      .orderBy(asc(users.id))
-      .for("update");
+    const employees = await lockActiveEmployees(tx);
 
     if (mode.kind === "owner" && !employees.some((e) => e.id === mode.ownerId))
       throw new AppError(422, "VALIDATION_ERROR", "Invalid request", [

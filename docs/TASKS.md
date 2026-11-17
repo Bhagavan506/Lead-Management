@@ -194,6 +194,14 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 - Mutation-checked: removing `ON CONFLICT` fails 3 tests. 28 tests (11 parser + 17 API).
 - **Not handled:** spreadsheet "formula injection" (cells starting `=`, `+`, `-`, `@`) is not neutralised because nothing in the spec exports data; revisit if an export feature is ever added.
 
+### T3.5 note
+
+`POST /api/leads/:id/assign` {ownerId: employee id | null} (admin only; null = back to the pool, as the prototype's "Unassigned" option). Returns `{ changed, lead, timeline }`. History: "Assigned to <name>" (type ASSIGNED) or "Moved back to unassigned pool" (UNASSIGNED), actor = admin, `meta {fromOwnerId, toOwnerId}`. Assigning to the current owner is a no-op with no history. Only active employees are valid targets (422 otherwise; admins, unknown, malformed also 422). Won/Lost leads can be reassigned (the prototype allows it); nothing but the owner changes. Employees get 403 even on their own lead.
+
+- **Locking (important for 3.6 and anything else touching employees + leads):** `services/locks.ts → lockActiveEmployees(tx)` must be taken FIRST, then lead rows. Deactivation, upload and assign now all use it. I refactored deactivation and upload onto the helper; their tests still pass.
+- **How the tests were checked:** my first concurrency tests did not fail under mutation. Reasons found: (1) removing only the lead row lock is an _equivalent_ mutant, since every assignment already serializes on the shared employee locks (the lead lock is defense in depth); (2) my deactivation race started with an unassigned lead, so no deadlock could form. Fixed by adding a test where the lead is owned by the employee being deactivated while it is moved to another. Now: inverted lock order reproduces a real deadlock and fails the test; removing all locks fails 4 tests; real code passes 12/12.
+- **Consequence to be aware of:** because assign/upload/deactivate/auto-assign share the employee lock, they run one at a time system-wide. These are rare admin actions, so that is fine; revisit only if upload volume ever becomes large.
+
 ## Phase 2 summary (Team management) — complete
 
 **Done:** create/list employees with a one-time temporary password, deactivate/reactivate with race-free last-employee protection and full rollback, forced first-login password change. 102 tests total (24 new in this phase), all against a real Postgres. Mutation-checked: the row lock, the forced-change gate.
@@ -208,4 +216,4 @@ Routes: `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`. HS2
 
 ## Status at last checkpoint
 
-Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.5 (assign and reassign). \*`docker compose up` unverified (no Docker daemon in sandbox).
+Done: Phase 0, Phase 1, Phase 2, 3.1. Next: 3.6 (auto-assign). \*`docker compose up` unverified (no Docker daemon in sandbox).
