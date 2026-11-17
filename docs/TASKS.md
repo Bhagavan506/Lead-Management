@@ -59,7 +59,7 @@ Rule: one task at a time, in order. A task is `done` only when typecheck, lint a
 | 9.4                                                                                              | Meta WhatsApp Cloud API provider with approved template; delivery-status webhook with signature verification         | Tests pass against a simulated Meta API. **Not verified live** (no credentials) | done (simulated) |         |
 | **Phase 10: Hardening and release**                                                              |                                                                                                                      |                                                                                 |                  |         |
 | 10.1                                                                                             | Playwright E2E: admin uploads, assigns, employee works a lead, admin sees activity                                   | E2E suite passes                                                                | done             |         |
-| 10.2                                                                                             | Authorization test matrix: employee vs every admin route; employee A vs employee B's lead (IDOR)                     | Matrix passes                                                                   | todo             |         |
+| 10.2                                                                                             | Authorization test matrix: employee vs every admin route; employee A vs employee B's lead (IDOR)                     | Matrix passes                                                                   | done             |         |
 | 10.3                                                                                             | Input validation and error-format review, request logging, dependency audit                                          | Review done, audit clean or documented                                          | todo             |         |
 | 10.4                                                                                             | Mobile QA pass on every screen at 360, 390, 768 px, with fixes                                                       | All screens checked and fixed                                                   | todo             |         |
 | 10.5                                                                                             | Production Dockerfiles, deployment notes, database backup plan (**ask about hosting first**)                         | Images build; notes and backup plan written                                     | todo             |         |
@@ -330,6 +330,14 @@ All admin screens use the real API (no mock data in the app). Every screen has l
 - 7 serial specs: admin uploads and assigns (with an invalid row), duplicate re-upload skipped, Priya calls/notes/changes status/marks Lost with a reason (rule 8 checked), Priya cannot open Rohan's lead by URL, employee redirected from admin, admin sees the activity, sign-out ends the session.
 - Mutation check: making `leadScope` return no filter fails the IDOR spec; restored.
 - 3 clean runs. Selector lesson: labels wrap their control, so the accessible name includes the current value; specs use `label:has-text(...) select`.
+
+### T10.2 note (authorization matrix)
+
+- `routes/authz.matrix.test.ts` (95 tests). Every route registered by the app is captured with an `onRoute` hook and must have a rule (any / admin / employee / public); an unlisted route fails the suite, as does a stale rule. For each: 401 with no cookie, 401 for forged/empty/tampered cookies, 403 for the wrong role (checked before validation), and allowed roles are not turned away.
+- Employee A vs employee B's lead: read, status, lost, call, note, follow-up and contact event return a 404 identical to a missing lead; assign is 403; nothing changes; the lead is absent from lists, search and owner filters; non-UUID ids are rejected.
+- Sessions: a deactivated user's cookie is rejected at once; a role change in the DB applies on the next request.
+- Decision: `POST /api/auth/logout` is deliberately public and idempotent (only clears the cookie).
+- Mutation checks: an admin guard downgraded to "any signed-in user" (7 failures) and `leadScope` made permissive (9 failures); both restored.
 
 ## Status at last checkpoint
 

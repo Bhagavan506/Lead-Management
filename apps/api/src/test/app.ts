@@ -22,7 +22,7 @@ export async function createTestApp(
   /** Mount extra routes (e.g. guarded probes) before the app becomes ready. */
   configure?: (app: FastifyInstance) => void,
   /** Build the provider from the env (e.g. WHATSAPP_PROVIDER=meta) instead of injecting the mock. */
-  opts: { realProvider?: boolean } = {},
+  opts: { realProvider?: boolean; beforeReady?: (app: FastifyInstance) => void } = {},
 ): Promise<TestApp> {
   const t = await createTestDb();
   await seed(t.db, { password: TEST_PASSWORD, defaultCountry: "IN", timeZone: "Asia/Kolkata" });
@@ -36,6 +36,7 @@ export async function createTestApp(
   const provider = new MockProvider();
   const app = buildApp(config, t.db, opts.realProvider ? {} : { provider });
   // Registered (not called directly) so it runs after the auth plugin has decorated the app.
+  opts.beforeReady?.(app);
   if (configure) app.register(async (instance) => configure(instance));
   await app.ready();
   return {
