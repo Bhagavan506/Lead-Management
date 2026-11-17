@@ -17,6 +17,11 @@ import { startScheduler } from "./scheduler.js";
 import { createProvider } from "./whatsapp/index.js";
 import type { WhatsAppProvider } from "./whatsapp/provider.js";
 
+/** What an access-log line says about a request: no query string, no body, no headers. */
+export function requestLogShape(req: { method?: string; url?: string; ip?: string }) {
+  return { method: req.method, url: req.url?.split("?")[0], remoteAddress: req.ip };
+}
+
 export function buildApp(
   config: Config,
   db: Db,
@@ -27,7 +32,12 @@ export function buildApp(
     logger:
       config.NODE_ENV === "test"
         ? false
-        : { level: "info", redact: ["req.headers.cookie", "req.headers.authorization"] },
+        : {
+            level: "info",
+            redact: ["req.headers.cookie", "req.headers.authorization"],
+            // Query strings carry search terms (lead names, phone numbers): keep them out of the logs.
+            serializers: { req: requestLogShape },
+          },
   });
 
   app.decorate("config", config);
