@@ -23,13 +23,23 @@ export function staleExpr(staleDays: number, now: Date) {
   return sql<boolean>`(${leads.status} not in ('WON','LOST') and ${leads.lastActivityAt} < ${cutoff}::timestamptz)`;
 }
 
+/** Name is optional: a lead without one is shown by its phone number. */
+export const displayName = sql<string>`coalesce(nullif(${leads.name}, ''), ${leads.phone})`;
+
 function leadColumns(isStale: ReturnType<typeof staleExpr>) {
   return {
     id: leads.id,
-    name: leads.name,
+    name: displayName,
+    hasName: sql<boolean>`(${leads.name} <> '')`,
     company: leads.company,
     phone: leads.phone,
     source: leads.source,
+    community: leads.community,
+    flatNumber: leads.flatNumber,
+    address: leads.address,
+    flatType: leads.flatType,
+    area: leads.area,
+    requirements: leads.requirements,
     status: leads.status,
     lostReason: leads.lostReason,
     followUpDate: leads.followUpDate,
@@ -79,6 +89,8 @@ export async function listLeads(
       or(
         ilike(leads.name, like),
         ilike(leads.company, like),
+        ilike(leads.community, like),
+        ilike(leads.flatNumber, like),
         digits.length >= 3 ? sql`${leads.phone} like ${`%${digits}%`}` : undefined,
       ),
     );

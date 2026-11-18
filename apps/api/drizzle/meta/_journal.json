@@ -15,6 +15,13 @@
       "when": 1794938284726,
       "tag": "0001_activities_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794995087222,
+      "tag": "0002_amused_black_widow",
+      "breakpoints": true
     }
   ]
 }

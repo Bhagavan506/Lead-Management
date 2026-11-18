@@ -49,3 +49,10 @@ export function dateTime(iso: string): string {
 export const phoneDigits = (e164: string) => e164.replace(/\D/g, "");
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/** "Green Park · Flat B-204" (company too, if there is one); empty when nothing is known. */
+export function placeLine(l: { community: string; flatNumber: string; company: string }): string {
+  return [l.community, l.flatNumber && `Flat ${l.flatNumber}`, l.company]
+    .filter(Boolean)
+    .join(" · ");
+}

@@ -10,6 +10,7 @@ import {
   STATUSES,
 } from "../lib/format";
 import type { CallOutcome, LeadDetail, LostReason, Status } from "../lib/types";
+import { CustomerDetailsForm } from "./CustomerDetails";
 import { Button, ErrorText, Panel } from "./ui";
 
 const OUTCOMES: [CallOutcome, string][] = [
@@ -80,7 +81,7 @@ export function EmployeeActions({ detail }: { detail: LeadDetail }) {
   const busy =
     setStatus.isPending || setFollowUp.isPending || logCall.isPending || addNote.isPending;
   const digits = phoneDigits(lead.phone);
-  const first = lead.name.split(" ")[0];
+  const first = lead.hasName ? lead.name.split(" ")[0] : "there";
   const wa = `https://wa.me/${digits}?text=${encodeURIComponent(`Hi ${first}, this is ${user?.name ?? "your account manager"} following up on your enquiry.`)}`;
 
   function submitNote(e: FormEvent) {
@@ -108,6 +109,8 @@ export function EmployeeActions({ detail }: { detail: LeadDetail }) {
           WhatsApp
         </a>
       </div>
+
+      <CustomerDetailsForm lead={lead} />
 
       {askLost && (
         <Panel className="my-2">

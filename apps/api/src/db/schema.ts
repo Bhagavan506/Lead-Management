@@ -68,6 +68,14 @@ export const leads = pgTable(
     // E.164, e.g. +919810000001. Unique: rule 2.
     phone: text("phone").notNull(),
     source: text("source").notNull().default("Other"),
+    // From the upload (all optional)...
+    community: text("community").notNull().default(""),
+    flatNumber: text("flat_number").notNull().default(""),
+    // ...and collected by the employee on calls. Empty string = not provided.
+    address: text("address").notNull().default(""),
+    flatType: text("flat_type").notNull().default(""),
+    area: text("area").notNull().default(""),
+    requirements: text("requirements").notNull().default(""),
     status: leadStatusEnum("status").notNull().default("NEW"),
     lostReason: lostReasonEnum("lost_reason"),
     followUpDate: date("follow_up_date", { mode: "string" }),

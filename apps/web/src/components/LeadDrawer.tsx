@@ -1,8 +1,9 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useLeadDetail } from "../lib/queries";
 import { ApiError } from "../lib/api";
-import { dateTime, LOST_REASON_LABEL, STATUS_LABEL } from "../lib/format";
+import { dateTime, LOST_REASON_LABEL, placeLine, STATUS_LABEL } from "../lib/format";
 import type { LeadDetail } from "../lib/types";
+import { CustomerDetailsView } from "./CustomerDetails";
 import { Button, Spinner, Tag } from "./ui";
 
 /**
@@ -74,7 +75,7 @@ export function LeadDrawer({
         {d && (
           <>
             <p className="text-mu">
-              {d.lead.company} · {d.lead.phone}
+              {[placeLine(d.lead), d.lead.phone].filter(Boolean).join(" · ")}
             </p>
             <div className="my-3 flex flex-wrap items-center gap-2">
               <Tag>{STATUS_LABEL[d.lead.status]}</Tag>
@@ -90,7 +91,7 @@ export function LeadDrawer({
               <dd>{d.lead.source || "—"}</dd>
             </dl>
 
-            {actions?.(d)}
+            {actions ? actions(d) : <CustomerDetailsView lead={d.lead} />}
 
             <h3 className="mt-5 mb-1 text-sm font-bold">History</h3>
             {d.timeline.length === 0 ? (

@@ -6,9 +6,16 @@ export type CallOutcome = "ANSWERED" | "NO_ANSWER" | "BUSY" | "WRONG_NUMBER";
 export interface Lead {
   id: string;
   name: string;
+  hasName: boolean;
   company: string;
   phone: string;
   source: string;
+  community: string;
+  flatNumber: string;
+  address: string;
+  flatType: string;
+  area: string;
+  requirements: string;
   status: Status;
   lostReason: LostReason | null;
   followUpDate: string | null;

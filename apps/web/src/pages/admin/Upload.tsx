@@ -27,7 +27,8 @@ interface Report {
 }
 
 const MAX_BYTES = 5 * 1024 * 1024;
-const SAMPLE = "name,company,phone,source\nAsha Rao,Acme Ltd,98100 00001,Website\n";
+const SAMPLE =
+  "name,phone,community,flat number\nAsha Rao,98100 00001,Green Park,B-204\n,98100 00002,,\n";
 
 export function UploadPage() {
   const qc = useQueryClient();
@@ -74,9 +75,9 @@ export function UploadPage() {
       <Panel className="mb-3.5">
         <h3 className="mb-1 text-sm font-bold">Upload leads</h3>
         <p className="text-mu">
-          Columns: <b>name</b>, <b>company</b>, <b>phone</b>, <b>source</b> (first row is the
-          header). Phone numbers without a country code are treated as Indian numbers. Duplicates
-          are skipped.{" "}
+          Columns: <b>phone</b> (required), and optionally <b>name</b>, <b>community</b> and{" "}
+          <b>flat number</b> (first row is the header). Phone numbers without a country code are
+          treated as Indian numbers. Duplicates are skipped.{" "}
           <a
             className="underline"
             href={`data:text/csv;charset=utf-8,${encodeURIComponent(SAMPLE)}`}

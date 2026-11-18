@@ -5,6 +5,7 @@ import { CsvFileError, parseLeadCsv } from "../lib/csv-leads.js";
 import type { SessionUser } from "../plugins/auth.js";
 import { assignLead } from "../services/lead-assign.js";
 import { addNote, logCall, recordContactEvent, setFollowUp } from "../services/lead-actions.js";
+import { updateLeadDetails } from "../services/lead-details.js";
 import { changeStatus } from "../services/lead-status.js";
 import { autoAssignLeads } from "../services/lead-auto-assign.js";
 import { uploadLeads, type UploadMode } from "../services/lead-upload.js";
@@ -67,6 +68,19 @@ const followUpBody = z.object({
     )
     .nullable(),
 });
+const detailText = (max: number) => z.string().trim().max(max);
+const detailsBody = z
+  .object({
+    name: detailText(200),
+    community: detailText(200),
+    flatNumber: detailText(50),
+    address: detailText(1000),
+    flatType: detailText(100),
+    area: detailText(100),
+    requirements: detailText(2000),
+  })
+  .partial()
+  .strict();
 const contactBody = z.object({ kind: z.enum(["CALL", "WHATSAPP"]) });
 
 const assignBody = z.object({ ownerId: z.string().uuid().nullable() });
@@ -171,6 +185,14 @@ export async function leadRoutes(app: FastifyInstance) {
         { path: "date", message: "Reopen the lead first" },
       ]);
     return { changed: result === "CHANGED", ...(await getLeadDetail(app.db, user, id)) };
+  });
+
+  app.patch("/:id/details", work, async (req) => {
+    const { id } = idParams.parse(req.params);
+    const body = detailsBody.parse(req.body);
+    const user = req.user as SessionUser;
+    const changed = await updateLeadDetails(app.db, user, id, body);
+    return { changed: changed.length > 0, ...(await getLeadDetail(app.db, user, id)) };
   });
 
   app.post("/:id/contact-events", work, async (req) => {

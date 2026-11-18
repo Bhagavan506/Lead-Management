@@ -10,9 +10,16 @@ const me = { "GET /api/auth/me": () => ({ json: { user: ADMIN } }) };
 const lead = (o: Record<string, unknown> = {}) => ({
   id: "L1",
   name: "Aarav Mehta",
+  hasName: true,
   company: "Acme",
   phone: "+919810000001",
   source: "Web",
+  community: "",
+  flatNumber: "",
+  address: "",
+  flatType: "",
+  area: "",
+  requirements: "",
   status: "QUALIFIED",
   lostReason: null,
   followUpDate: null,
@@ -363,6 +370,42 @@ describe("All leads (7.2) and the read-only drawer (7.3)", () => {
     expect(within(dlg).queryByRole("textbox")).not.toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("shows the customer details the employee collected, read-only", async () => {
+    mockApi({
+      ...me,
+      ...users,
+      "GET /api/leads?page=1&pageSize=25": () => list([lead()]),
+      "GET /api/leads/L1": () => ({
+        json: {
+          lead: lead({
+            community: "Green Park",
+            flatNumber: "B-204",
+            address: "12 Park Road",
+            flatType: "3 BHK",
+            area: "1250 sq ft",
+            requirements: "Modular kitchen",
+          }),
+          timeline: [],
+          timelineTruncated: false,
+          staleDays: 2,
+        },
+      }),
+    });
+    renderApp("/admin/leads");
+    await userEvent.click(await screen.findByRole("button", { name: "Aarav Mehta" }));
+    const dlg = await screen.findByRole("dialog", { name: "Lead: Aarav Mehta" });
+    for (const t of [
+      "Green Park",
+      "B-204",
+      "12 Park Road",
+      "3 BHK",
+      "1250 sq ft",
+      "Modular kitchen",
+    ])
+      expect(within(dlg).getByText(t)).toBeInTheDocument();
+    expect(within(dlg).queryByRole("textbox")).not.toBeInTheDocument();
   });
 
   it("shows 'Lead not found' for a missing lead id in the URL", async () => {

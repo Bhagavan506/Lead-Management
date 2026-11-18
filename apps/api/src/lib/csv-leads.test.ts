@@ -13,6 +13,8 @@ describe("parseLeadCsv", () => {
         company: "Acme Ltd",
         phone: "+919811122233",
         source: "Website",
+        community: "",
+        flatNumber: "",
       },
     ]);
     expect(r.invalid).toEqual([]);
@@ -43,9 +45,8 @@ describe("parseLeadCsv", () => {
     const r = parse(
       "name,phone\nGood,9811122233\n,9811122244\nNo Phone,\nBad Phone,12\nAlso Good,9811122255",
     );
-    expect(r.valid.map((v) => v.row)).toEqual([2, 6]);
+    expect(r.valid.map((v) => v.row)).toEqual([2, 3, 6]); // a missing name is fine
     expect(r.invalid).toEqual([
-      { row: 3, name: "", phone: "9811122244", reason: "Name is missing" },
       { row: 4, name: "No Phone", phone: "", reason: "Phone is missing" },
       { row: 5, name: "Bad Phone", phone: "12", reason: "Phone number is not valid" },
     ]);
@@ -62,10 +63,25 @@ describe("parseLeadCsv", () => {
     ]);
   });
 
-  it("rejects a file without the required columns", () => {
-    expect(() => parse("name,company\nRavi,Acme")).toThrow(/must include: phone/);
-    expect(() => parse("phone\n9811122233")).toThrow(/must include: name/);
-    expect(() => parse("foo,bar\n1,2")).toThrow(/name, phone/);
+  it("needs only a phone: name, community and flat number are optional", () => {
+    const r = parse("phone\n9811122233");
+    expect(r.valid).toHaveLength(1);
+    expect(r.valid[0]).toMatchObject({ name: "", community: "", flatNumber: "" });
+  });
+
+  it("reads community and flat number, whatever the header spelling", () => {
+    for (const header of ["name,phone,community,flat number", "Name,Mobile,Society,Flat_No"]) {
+      const r = parse(`${header}\nAsha,98111 22233,Green Park,B-204\n,9811122244,,`);
+      expect(r.valid.map((v) => [v.name, v.community, v.flatNumber])).toEqual([
+        ["Asha", "Green Park", "B-204"],
+        ["", "", ""],
+      ]);
+    }
+  });
+
+  it("rejects a file without a phone column", () => {
+    expect(() => parse("name,company\nRavi,Acme")).toThrow(/phone/);
+    expect(() => parse("foo,bar\n1,2")).toThrow(/phone/);
   });
 
   it("rejects an empty file, a header-only file and a file that is too long", () => {

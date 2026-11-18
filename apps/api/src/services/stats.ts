@@ -3,7 +3,7 @@ import type { Db } from "../db/client.js";
 import { activities, leads, users } from "../db/schema.js";
 import { LOST_REASON_LABEL } from "../lib/labels.js";
 import { dateInTz } from "../lib/dates.js";
-import { staleExpr } from "./leads.js";
+import { displayName, staleExpr } from "./leads.js";
 import { getStaleDays } from "./settings.js";
 
 /** Open = not Won and not Lost. Overdue = open with a follow-up date before today (in APP_TIMEZONE). */
@@ -73,8 +73,9 @@ export async function staleLeads(db: Db, now = new Date()) {
   const rows = await db
     .select({
       id: leads.id,
-      name: leads.name,
+      name: displayName,
       company: leads.company,
+      community: leads.community,
       status: leads.status,
       ownerId: leads.ownerId,
       ownerName: users.name,
@@ -117,7 +118,7 @@ export async function activityFeed(db: Db, page: number, pageSize: number) {
       actorId: activities.actorId,
       actorName: users.name,
       leadId: activities.leadId,
-      leadName: leads.name,
+      leadName: displayName,
     })
     .from(activities)
     .innerJoin(users, eq(users.id, activities.actorId))

@@ -58,6 +58,8 @@ export async function uploadLeads(
             company: l.company,
             phone: l.phone,
             source: l.source,
+            community: l.community,
+            flatNumber: l.flatNumber,
             lastActivityAt: sql`clock_timestamp()`,
           })),
         )

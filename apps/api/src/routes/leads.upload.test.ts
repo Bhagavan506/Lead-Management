@@ -136,13 +136,12 @@ describe.skipIf(!hasDb)("POST /api/leads/upload", () => {
       ]),
     });
     const body = res.json();
-    expect(body.summary).toMatchObject({ rows: 5, added: 2, invalid: 3 });
+    expect(body.summary).toMatchObject({ rows: 5, added: 3, invalid: 2 });
     expect(body.invalid.map((r: { row: number; reason: string }) => [r.row, r.reason])).toEqual([
-      [3, "Name is missing"],
       [4, "Phone is missing"],
       [5, "Phone number is not valid"],
     ]);
-    expect(await byPhone("+919855500002")).toBeUndefined();
+    expect(await byPhone("+919855500002")).toBeDefined(); // a missing name is fine
   });
 
   it("rejects whole-file problems with 422 and adds nothing", async () => {

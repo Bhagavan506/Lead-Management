@@ -1,4 +1,4 @@
-import { STATUS_LABEL } from "../lib/format";
+import { placeLine, STATUS_LABEL } from "../lib/format";
 import type { Lead } from "../lib/types";
 import { Tag } from "./ui";
 
@@ -24,7 +24,7 @@ export function LeadCard({
         aria-label={`Open ${lead.name}`}
       >
         <b className="block truncate">{lead.name}</b>
-        <small className="text-mu">{lead.company}</small>
+        <small className="text-mu">{placeLine(lead)}</small>
         <div className="my-1.5 flex flex-wrap items-center gap-1.5">
           <Tag>{STATUS_LABEL[lead.status]}</Tag>
           {lead.isStale && <Tag tone="bad">Stale</Tag>}

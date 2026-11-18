@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gt, isNotNull, lte, notInArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
+import { displayName } from "./leads.js";
 import { leads, reminderLog, users } from "../db/schema.js";
 import { dateInTz } from "../lib/dates.js";
 import type { WhatsAppProvider } from "../whatsapp/provider.js";
@@ -31,7 +32,7 @@ export async function dueByEmployee(db: Db, today: string) {
       employeeName: users.name,
       phone: users.phone,
       leadId: leads.id,
-      leadName: leads.name,
+      leadName: displayName,
       followUpDate: leads.followUpDate,
     })
     .from(leads)

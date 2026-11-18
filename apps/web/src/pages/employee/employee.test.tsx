@@ -9,9 +9,16 @@ const me = { "GET /api/auth/me": () => ({ json: { user: PRIYA } }) };
 const lead = (o: Record<string, unknown> = {}) => ({
   id: "L1",
   name: "Aarav Mehta",
+  hasName: true,
   company: "Northwind",
   phone: "+919810000001",
   source: "Web",
+  community: "",
+  flatNumber: "",
+  address: "",
+  flatType: "",
+  area: "",
+  requirements: "",
   status: "QUALIFIED",
   lostReason: null,
   followUpDate: null,
@@ -286,6 +293,31 @@ describe("Lead drawer for employees (8.2)", () => {
     expect(await within(dlg).findByText("Note: Wants a demo")).toBeInTheDocument();
     expect(sent(calls, "POST", "/api/leads/L1/notes")).toEqual({ text: "Wants a demo" });
     expect(within(dlg).getByLabelText("Note")).toHaveValue("");
+  });
+
+  it("saves the customer details from the call and sends only what changed", async () => {
+    const { calls, dlg } = await open({
+      "PATCH /api/leads/L1/details": () =>
+        detail(lead({ flatType: "3 BHK", requirements: "Modular kitchen" }), [
+          entry("t1", "Details updated: Flat type, Requirements"),
+        ]),
+    });
+    const save = within(dlg).getByRole("button", { name: "Save details" });
+    expect(save).toBeDisabled(); // nothing changed yet
+    await userEvent.type(within(dlg).getByLabelText("Flat type"), "3 BHK");
+    await userEvent.type(
+      within(dlg).getByLabelText("Specifications / customisations"),
+      "Modular kitchen",
+    );
+    await userEvent.click(save);
+    expect(
+      await within(dlg).findByText("Details updated: Flat type, Requirements"),
+    ).toBeInTheDocument();
+    expect(sent(calls, "PATCH", "/api/leads/L1/details")).toEqual({
+      flatType: "3 BHK",
+      requirements: "Modular kitchen",
+    });
+    expect(within(dlg).getByLabelText("Flat type")).toHaveValue("3 BHK");
   });
 
   it("Enter in the note box adds the note", async () => {

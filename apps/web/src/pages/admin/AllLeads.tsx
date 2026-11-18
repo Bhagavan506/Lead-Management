@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { post } from "../../lib/api";
-import { ago, plural, STATUS_LABEL, STATUSES } from "../../lib/format";
+import { ago, placeLine, plural, STATUS_LABEL, STATUSES } from "../../lib/format";
 import { useLeads, useTeam } from "../../lib/queries";
 import type { Lead, TeamUser } from "../../lib/types";
 import { useMedia } from "../../lib/useMedia";
@@ -70,7 +70,7 @@ export function AllLeadsPage() {
         <input
           type="search"
           aria-label="Search leads"
-          placeholder="Search name, company or phone"
+          placeholder="Search name, community, flat or phone"
           value={text}
           onChange={(e) => setText(e.target.value)}
           className="tap min-w-0 flex-1 basis-48"
@@ -224,7 +224,7 @@ function LeadTable({ rows, people, onOpen }: RowProps) {
                 </button>
                 <br />
                 <small className="text-mu">
-                  {l.company} · {l.phone}
+                  {[placeLine(l), l.phone].filter(Boolean).join(" · ")}
                 </small>
               </td>
               <td className={td}>
@@ -262,7 +262,7 @@ function LeadCards({ rows, people, onOpen }: RowProps) {
             >
               <b className="block truncate">{l.name}</b>
               <small className="text-mu">
-                {l.company} · {l.phone}
+                {[placeLine(l), l.phone].filter(Boolean).join(" · ")}
               </small>
             </button>
             <Tag>{STATUS_LABEL[l.status]}</Tag>

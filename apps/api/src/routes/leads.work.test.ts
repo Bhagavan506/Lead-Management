@@ -326,4 +326,68 @@ describe.skipIf(!hasDb)("employee lead work: calls, notes, follow-up, contact ev
       ((await acts("Aarav Mehta")).at(-1) as { createdAt: Date }).createdAt.getTime(),
     );
   });
+
+  describe("customer details", () => {
+    const body = {
+      address: "12 Park Road",
+      flatType: "3 BHK",
+      area: "1250 sq ft",
+      requirements: "Modular kitchen, extra wardrobe",
+    };
+
+    it("the owner saves details; they are stored, shown in the lead and logged in the history", async () => {
+      const res = await patch("priya", "Sara Khan", "details", {
+        ...body,
+        community: "Green Park",
+        flatNumber: "B-204",
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().changed).toBe(true);
+      expect(res.json().lead).toMatchObject({
+        ...body,
+        community: "Green Park",
+        flatNumber: "B-204",
+      });
+      expect(res.json().timeline[0]).toMatchObject({
+        type: "NOTE",
+        text: "Details updated: Community, Flat number, Address, Flat type, Area, Requirements",
+      });
+      // The admin can read them.
+      const admin = await w.call("admin", "GET", `/api/leads/${w.lid["Sara Khan"]}`);
+      expect(admin.json().lead).toMatchObject(body);
+    });
+
+    it("saving the same values again changes nothing and adds no history", async () => {
+      const before = await n("Sara Khan");
+      const res = await patch("priya", "Sara Khan", "details", body);
+      expect(res.json().changed).toBe(false);
+      expect(await n("Sara Khan")).toBe(before);
+    });
+
+    it("only the changed field is named, and an empty value clears a field", async () => {
+      const res = await patch("priya", "Sara Khan", "details", { area: "" });
+      expect(res.json().lead.area).toBe("");
+      expect(res.json().timeline[0].text).toBe("Details updated: Area");
+    });
+
+    it("a lead without a name is shown by its phone, and giving a name replaces it", async () => {
+      await reset("Aarav Mehta", { name: "" });
+      const before = await w.call("priya", "GET", `/api/leads/${w.lid["Aarav Mehta"]}`);
+      expect(before.json().lead.hasName).toBe(false);
+      expect(before.json().lead.name).toMatch(/^\+91/);
+      const res = await patch("priya", "Aarav Mehta", "details", { name: "Aarav M" });
+      expect(res.json().lead).toMatchObject({ name: "Aarav M", hasName: true });
+    });
+
+    it("another employee gets 404, an admin 403, anonymous 401, bad input 422", async () => {
+      expect((await patch("rohan", "Sara Khan", "details", body)).statusCode).toBe(404);
+      expect((await patch("admin", "Sara Khan", "details", body)).statusCode).toBe(403);
+      expect((await patch(null, "Sara Khan", "details", body)).statusCode).toBe(401);
+      const long = { address: "x".repeat(1001) };
+      expect((await patch("priya", "Sara Khan", "details", long)).statusCode).toBe(422);
+      expect((await patch("priya", "Sara Khan", "details", { status: "WON" })).statusCode).toBe(
+        422,
+      );
+    });
+  });
 });
