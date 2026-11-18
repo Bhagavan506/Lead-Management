@@ -14,6 +14,8 @@ import { reminderRoutes } from "./routes/reminders.js";
 import { userRoutes } from "./routes/users.js";
 import { webhookRoutes } from "./routes/webhooks.js";
 import { startScheduler } from "./scheduler.js";
+import { PushNotifier } from "./push/notifier.js";
+import { pushRoutes } from "./routes/push.js";
 import { createProvider } from "./whatsapp/index.js";
 import type { WhatsAppProvider } from "./whatsapp/provider.js";
 
@@ -25,7 +27,7 @@ export function requestLogShape(req: { method?: string; url?: string; ip?: strin
 export function buildApp(
   config: Config,
   db: Db,
-  deps: { provider?: WhatsAppProvider } = {},
+  deps: { provider?: WhatsAppProvider; push?: PushNotifier | null } = {},
 ): FastifyInstance {
   const app = Fastify({
     trustProxy: config.TRUST_PROXY,
@@ -42,7 +44,19 @@ export function buildApp(
 
   app.decorate("config", config);
   app.decorate("db", db);
-  app.decorate("whatsapp", deps.provider ?? createProvider(config));
+  // Push is available whenever the VAPID keys are set (reminders AND "lead assigned" notices).
+  const push =
+    deps.push !== undefined
+      ? deps.push
+      : config.VAPID_PUBLIC_KEY && config.VAPID_PRIVATE_KEY
+        ? new PushNotifier(db, {
+            publicKey: config.VAPID_PUBLIC_KEY,
+            privateKey: config.VAPID_PRIVATE_KEY,
+            subject: config.VAPID_SUBJECT,
+          })
+        : null;
+  app.decorate("push", push);
+  app.decorate("whatsapp", deps.provider ?? createProvider(config, fetch, push ?? undefined));
   app.register(helmet);
   app.register(cors, {
     origin: config.CORS_ORIGIN.split(",")
@@ -90,6 +104,7 @@ export function buildApp(
   app.register(leadRoutes, { prefix: "/api/leads" });
   app.register(statsRoutes, { prefix: "/api" });
   app.register(reminderRoutes, { prefix: "/api/reminders" });
+  app.register(pushRoutes, { prefix: "/api/push" });
   app.register(webhookRoutes, { prefix: "/webhooks" });
 
   if (config.SCHEDULER_ENABLED) {
@@ -107,5 +122,7 @@ declare module "fastify" {
     config: Config;
     db: Db;
     whatsapp: WhatsAppProvider;
+    /** null when no VAPID keys are configured. */
+    push: PushNotifier | null;
   }
 }

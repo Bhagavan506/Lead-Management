@@ -1,13 +1,22 @@
 import type { Config } from "../config.js";
+import type { PushNotifier } from "../push/notifier.js";
+import { PushProvider } from "../push/provider.js";
 import { MetaProvider } from "./meta.js";
 import { MockProvider } from "./mock.js";
 import type { WhatsAppProvider } from "./provider.js";
 
 /** Chosen by WHATSAPP_PROVIDER. Tests always get the mock unless they build a MetaProvider on purpose. */
-export function createProvider(config: Config, fetchImpl: typeof fetch = fetch): WhatsAppProvider {
+export function createProvider(
+  config: Config,
+  fetchImpl: typeof fetch = fetch,
+  push?: PushNotifier,
+): WhatsAppProvider {
   switch (config.WHATSAPP_PROVIDER) {
     case "mock":
       return new MockProvider();
+    case "push":
+      // loadConfig has already refused to start without the VAPID keys, so `push` exists.
+      return new PushProvider(push as PushNotifier);
     case "meta":
       // loadConfig has already refused to start without these.
       return new MetaProvider(

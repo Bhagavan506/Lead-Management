@@ -249,3 +249,95 @@ describe("Employee reminder panel (8.3 / 9.3)", () => {
     expect(await screen.findByText(/no WhatsApp number on your account/)).toBeInTheDocument();
   });
 });
+
+describe("Push notifications", () => {
+  const me = { "GET /api/auth/me": () => ({ json: { user: PRIYA } }) };
+  const mine = (o = {}) => ({
+    "GET /api/reminders/mine": () => ({
+      json: {
+        enabled: true,
+        time: "09:00",
+        phone: null,
+        channel: "push",
+        pushAvailable: true,
+        devices: 0,
+        recent: [],
+        ...o,
+      },
+    }),
+  });
+  const fakeSub = {
+    endpoint: "https://push.example.com/abc",
+    toJSON: () => ({ endpoint: "https://push.example.com/abc", keys: { p256dh: "k", auth: "a" } }),
+    unsubscribe: async () => true,
+  };
+
+  afterEach(() => {
+    delete (navigator as unknown as { serviceWorker?: unknown }).serviceWorker;
+  });
+
+  function stubBrowser(permission: NotificationPermission = "default") {
+    let sub: typeof fakeSub | null = null;
+    const pushManager = {
+      getSubscription: async () => sub,
+      subscribe: async () => (sub = fakeSub),
+    };
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        register: async () => ({}),
+        ready: Promise.resolve({ pushManager }),
+        getRegistration: async () => ({ pushManager }),
+      },
+    });
+    vi.stubGlobal("PushManager", class {});
+    vi.stubGlobal("Notification", { permission, requestPermission: async () => "granted" });
+  }
+
+  it("tells an employee on a browser without push support what to do", async () => {
+    mockApi({ ...me, ...mine() });
+    renderApp("/app/follow-ups");
+    expect(await screen.findByRole("heading", { name: "Notifications" })).toBeInTheDocument();
+    expect(await screen.findByText(/add Leadbook to your Home Screen/)).toBeInTheDocument();
+  });
+
+  it("turns notifications on for this device and registers it with the server", async () => {
+    stubBrowser();
+    const calls = mockApi({
+      ...me,
+      ...mine(),
+      "GET /api/push/public-key": () => ({ json: { publicKey: "BPublicKey_-" } }),
+      "POST /api/push/subscribe": () => ({ json: { devices: 1 } }),
+    });
+    renderApp("/app/follow-ups");
+    await userEvent.click(await screen.findByRole("button", { name: "Turn on notifications" }));
+    expect(await screen.findByText("Notifications are on for this device.")).toBeInTheDocument();
+    expect(calls.find((c) => c.path === "/api/push/subscribe")?.body).toEqual(fakeSub.toJSON());
+    expect(await screen.findByRole("button", { name: "Send me a test" })).toBeInTheDocument();
+  });
+
+  it("explains when the browser has blocked notifications", async () => {
+    stubBrowser("denied");
+    mockApi({ ...me, ...mine() });
+    renderApp("/app/follow-ups");
+    expect(await screen.findByText(/blocked for this site/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Turn on notifications" })).toBeDisabled();
+  });
+
+  it("the admin sees who has no device, and cannot send when nobody can be reached", async () => {
+    mockApi({
+      ...admin,
+      "GET /api/settings": () => settings(),
+      "GET /api/reminders/due": () => due([emp({ phone: null, reachable: false })], "push"),
+      [logPath]: () => ({ json: { items: [], page: 1, totalPages: 1, total: 0 } }),
+    });
+    renderApp("/admin/reminders");
+    expect(
+      await screen.findByRole("heading", { name: "Follow-up notifications" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/No device with notifications on, so nothing can be sent/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send all due now" })).toBeDisabled();
+  });
+});

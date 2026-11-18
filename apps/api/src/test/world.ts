@@ -1,13 +1,9 @@
-import type { FastifyInstance } from "fastify";
 import { eq } from "drizzle-orm";
 import { leads, users } from "../db/schema.js";
-import { createTestApp, loginCookie, type TestApp } from "./app.js";
+import { createTestApp, loginCookie, type TestApp, type TestAppOpts } from "./app.js";
 
 /** A seeded app plus logged-in cookies, user ids and lead ids by name, for route tests. */
-export async function createWorld(
-  env: Record<string, string> = {},
-  opts: { realProvider?: boolean; beforeReady?: (app: FastifyInstance) => void } = {},
-) {
+export async function createWorld(env: Record<string, string> = {}, opts: TestAppOpts = {}) {
   const ctx: TestApp = await createTestApp(env, undefined, opts);
   const cookies: Record<string, string> = {};
   const uid: Record<string, string> = {};

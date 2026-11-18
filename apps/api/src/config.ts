@@ -24,7 +24,13 @@ const schema = z
     LOGIN_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
     DEFAULT_COUNTRY_CODE: z.string().length(2).default("IN"),
     APP_TIMEZONE: z.string().default("Asia/Kolkata"),
-    WHATSAPP_PROVIDER: z.enum(["mock", "meta"]).default("mock"),
+    // How reminders are delivered: mock = record only, push = browser push notifications, meta = WhatsApp.
+    WHATSAPP_PROVIDER: z.enum(["mock", "meta", "push"]).default("mock"),
+    // Web Push (docs/PUSH.md). Generate with `pnpm --filter @leadbook/api push:keys`. Required for
+    // WHATSAPP_PROVIDER=push; when set they also enable "lead assigned" notifications.
+    VAPID_PUBLIC_KEY: z.string().optional(),
+    VAPID_PRIVATE_KEY: z.string().optional(),
+    VAPID_SUBJECT: z.string().default("mailto:admin@example.com"),
     // Only used when WHATSAPP_PROVIDER=meta (see docs/WHATSAPP.md). Empty strings count as unset.
     WHATSAPP_PHONE_NUMBER_ID: z.string().optional(),
     WHATSAPP_ACCESS_TOKEN: z.string().optional(),
@@ -53,6 +59,15 @@ const schema = z
             code: "custom",
             path: [k],
             message: "required when WHATSAPP_PROVIDER=meta",
+          });
+    }
+    if (c.WHATSAPP_PROVIDER === "push") {
+      for (const k of ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"] as const)
+        if (!c[k]?.trim())
+          ctx.addIssue({
+            code: "custom",
+            path: [k],
+            message: "required when WHATSAPP_PROVIDER=push",
           });
     }
     if (c.NODE_ENV !== "production") return;

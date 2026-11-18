@@ -153,6 +153,27 @@ export const reminderLog = pgTable(
   ],
 );
 
+// One row per browser/device an employee turned notifications on for.
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // The push service URL for this device. Unique: subscribing again just refreshes the row.
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    userAgent: text("user_agent").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("push_subscriptions_endpoint_key").on(t.endpoint),
+    index("push_subscriptions_user_idx").on(t.userId),
+  ],
+);
+
 export type User = typeof users.$inferSelect;
 export type Lead = typeof leads.$inferSelect;
 export type Activity = typeof activities.$inferSelect;

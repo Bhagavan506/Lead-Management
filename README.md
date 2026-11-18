@@ -69,7 +69,8 @@ All settings are environment variables, read and validated at start-up (the API 
 | `LOGIN_MAX_FAILURES_PER_ACCOUNT` / `_PER_IP` / `LOGIN_WINDOW_MINUTES`                         | `5` / `20` / `15`       | Failed-login limits (in memory, per instance)                              |
 | `DEFAULT_COUNTRY_CODE`                                                                        | `IN`                    | Applied to phone numbers without a country code                            |
 | `APP_TIMEZONE`                                                                                | `Asia/Kolkata`          | "Today", overdue and reminder times use this, not the server clock         |
-| `WHATSAPP_PROVIDER`                                                                           | `mock`                  | `mock` records only; `meta` sends via the WhatsApp Cloud API               |
+| `WHATSAPP_PROVIDER`                                                                           | `mock`                  | `mock` records only; `push` sends browser notifications (`docs/PUSH.md`); `meta` sends via the WhatsApp Cloud API |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | unset | Web Push keys (`pnpm --filter @leadbook/api push:keys`); required with `push`; also enable "lead assigned" notifications |
 | `WHATSAPP_PHONE_NUMBER_ID`, `_ACCESS_TOKEN`, `_TEMPLATE_NAME`, `_APP_SECRET`, `_VERIFY_TOKEN` | required with `meta`    | See `docs/WHATSAPP.md`                                                     |
 | `WHATSAPP_TEMPLATE_LANG`, `WHATSAPP_API_BASE`                                                 | `en`, Graph API v21.0   | Template language; API base URL                                            |
 | `SCHEDULER_ENABLED`                                                                           | `true`                  | The in-process daily reminder job                                          |

@@ -3,7 +3,19 @@ import { buildApp } from "../app.js";
 import { MockProvider } from "../whatsapp/mock.js";
 import { loadConfig } from "../config.js";
 import { seed } from "../db/seed.js";
+import type { Db } from "../db/client.js";
+import type { PushNotifier } from "../push/notifier.js";
+import type { WhatsAppProvider } from "../whatsapp/provider.js";
 import { createTestDb, type TestDb } from "./db.js";
+
+export interface TestAppOpts {
+  realProvider?: boolean;
+  beforeReady?: (app: FastifyInstance) => void;
+  /** Gives the app a push notifier (usually built on a fake sender). Default: push is off. */
+  makePush?: (db: Db) => PushNotifier;
+  /** Use another reminder provider built on the push notifier (needs makePush). */
+  pushProvider?: (push: PushNotifier) => WhatsAppProvider;
+}
 
 export const TEST_PASSWORD = "Test-Password-123";
 export const TEST_SECRET = "test-secret-".padEnd(48, "x");
@@ -22,7 +34,7 @@ export async function createTestApp(
   /** Mount extra routes (e.g. guarded probes) before the app becomes ready. */
   configure?: (app: FastifyInstance) => void,
   /** Build the provider from the env (e.g. WHATSAPP_PROVIDER=meta) instead of injecting the mock. */
-  opts: { realProvider?: boolean; beforeReady?: (app: FastifyInstance) => void } = {},
+  opts: TestAppOpts = {},
 ): Promise<TestApp> {
   const t = await createTestDb();
   await seed(t.db, { password: TEST_PASSWORD, defaultCountry: "IN", timeZone: "Asia/Kolkata" });
@@ -34,7 +46,15 @@ export async function createTestApp(
     ...env,
   });
   const provider = new MockProvider();
-  const app = buildApp(config, t.db, opts.realProvider ? {} : { provider });
+  const push = opts.makePush?.(t.db) ?? null;
+  const app = buildApp(config, t.db, {
+    push,
+    ...(opts.pushProvider && push
+      ? { provider: opts.pushProvider(push) }
+      : opts.realProvider
+        ? {}
+        : { provider }),
+  });
   // Registered (not called directly) so it runs after the auth plugin has decorated the app.
   opts.beforeReady?.(app);
   if (configure) app.register(async (instance) => configure(instance));

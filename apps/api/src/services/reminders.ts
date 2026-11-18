@@ -15,7 +15,7 @@ export interface RunSummary {
   failed: number;
   /** A scheduled reminder for this employee and date already exists (rule 10), or a manual one was sent a moment ago. */
   alreadySent: number;
-  /** Employees with due follow-ups but no WhatsApp number on file. */
+  /** Employees with due follow-ups who cannot be reached (no WhatsApp number / no device registered). */
   noPhone: string[];
 }
 
@@ -97,7 +97,10 @@ export async function runReminders(
   };
 
   for (const e of await dueByEmployee(db, today)) {
-    if (!e.phone) {
+    const reachable = provider.canDeliver
+      ? await provider.canDeliver(e.employeeId)
+      : provider.usesPhone === false || !!e.phone;
+    if (!reachable) {
       summary.noPhone.push(e.name);
       continue;
     }
@@ -148,7 +151,7 @@ export async function runReminders(
 
     let result;
     try {
-      result = await provider.send({ to: e.phone, params, text });
+      result = await provider.send({ employeeId: e.employeeId, to: e.phone ?? "", params, text });
     } catch (err) {
       result = {
         status: "FAILED" as const,

@@ -25,6 +25,7 @@ interface Due {
     employeeId: string;
     name: string;
     phone: string | null;
+    reachable?: boolean;
     leads: { id: string; name: string; followUpDate: string; overdue: boolean }[];
     message: string;
   }[];
@@ -93,13 +94,17 @@ export function RemindersPage() {
 
   const s = settings.data;
   const employees = due.data?.employees ?? [];
-  const canSend = !!s?.reminderEnabled && employees.some((e) => e.phone);
+  const canSend = !!s?.reminderEnabled && employees.some((e) => e.reachable ?? !!e.phone);
+  const push = due.data?.provider === "push";
+  const missing = push ? "No device with notifications on" : "No WhatsApp number";
   const error = save.error ?? sendNow.error;
 
   return (
     <>
       <Panel className="mb-3.5">
-        <h3 className="mb-2 text-sm font-bold">WhatsApp follow-up reminders</h3>
+        <h3 className="mb-2 text-sm font-bold">
+          {push ? "Follow-up notifications" : "WhatsApp follow-up reminders"}
+        </h3>
         <QueryState query={settings}>
           {s && (
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -163,7 +168,10 @@ export function RemindersPage() {
               <span className="text-mu"> {result.alreadySent} skipped (sent a moment ago).</span>
             )}
             {result.noPhone.length > 0 && (
-              <span className="text-bad"> No WhatsApp number for {result.noPhone.join(", ")}.</span>
+              <span className="text-bad">
+                {" "}
+                {missing} for {result.noPhone.join(", ")}.
+              </span>
             )}
           </p>
         )}
@@ -178,12 +186,9 @@ export function RemindersPage() {
         ) : (
           employees.map((e) => (
             <Panel key={e.employeeId} className="mb-2.5">
-              <b>{e.name}</b> <small className="text-mu">{e.phone ?? ""}</small>
-              {!e.phone && (
-                <span className="font-bold text-bad">
-                  {" "}
-                  No WhatsApp number, so nothing can be sent
-                </span>
+              <b>{e.name}</b> <small className="text-mu">{push ? "" : (e.phone ?? "")}</small>
+              {!(e.reachable ?? !!e.phone) && (
+                <span className="font-bold text-bad"> {missing}, so nothing can be sent</span>
               )}
               <div className="text-mu">
                 {e.leads.map((l, i) => (

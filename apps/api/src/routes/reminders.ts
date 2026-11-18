@@ -24,18 +24,24 @@ export async function reminderRoutes(app: FastifyInstance) {
   // What would be sent right now: each employee's due or overdue follow-ups and the message text.
   app.get("/due", admin, async () => {
     const today = dateInTz(tz());
-    const employees = (await dueByEmployee(app.db, today)).map((e) => ({
-      employeeId: e.employeeId,
-      name: e.name,
-      phone: e.phone,
-      leads: e.due.map((d) => ({
-        id: d.leadId,
-        name: d.name,
-        followUpDate: d.followUpDate,
-        overdue: d.followUpDate < today,
+    const employees = await Promise.all(
+      (await dueByEmployee(app.db, today)).map(async (e) => ({
+        employeeId: e.employeeId,
+        name: e.name,
+        phone: e.phone,
+        // Can this provider reach them? (phone for WhatsApp, a registered device for push)
+        reachable: app.whatsapp.canDeliver
+          ? await app.whatsapp.canDeliver(e.employeeId)
+          : app.whatsapp.usesPhone === false || !!e.phone,
+        leads: e.due.map((d) => ({
+          id: d.leadId,
+          name: d.name,
+          followUpDate: d.followUpDate,
+          overdue: d.followUpDate < today,
+        })),
+        message: buildReminder(e.name, e.due, today).text,
       })),
-      message: buildReminder(e.name, e.due, today).text,
-    }));
+    );
     return { today, provider: app.whatsapp.name, employees };
   });
 
@@ -59,6 +65,9 @@ export async function reminderRoutes(app: FastifyInstance) {
       enabled: reminderEnabled,
       time: reminderTime,
       phone: user.phone,
+      channel: app.whatsapp.name,
+      pushAvailable: !!app.push,
+      devices: app.push ? await app.push.deviceCount(user.id) : 0,
       recent: await recentForEmployee(app.db, user.id),
     };
   });

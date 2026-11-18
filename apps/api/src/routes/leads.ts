@@ -88,6 +88,21 @@ const assignBody = z.object({ ownerId: z.string().uuid().nullable() });
 const idParams = z.object({ id: z.string().uuid() });
 
 export async function leadRoutes(app: FastifyInstance) {
+  /** Tell an employee leads were given to them. Best effort: never delays or fails the admin's request. */
+  const notifyAssigned = (employeeId: string, count: number, leadName?: string) => {
+    if (!app.push || count < 1) return;
+    app.push.notifyQuietly(
+      employeeId,
+      {
+        title: count === 1 ? "New lead assigned" : `${count} new leads assigned`,
+        body: count === 1 && leadName ? leadName : "Open Leadbook to see them.",
+        url: "/app/leads",
+        tag: "lead-assigned",
+      },
+      (e) => app.log.warn(e, "push notification failed"),
+    );
+  };
+
   // Any signed-in role; what they get back is decided by the query-layer scope, not by this guard.
   app.get("/", { preHandler: app.guard() }, async (req) => {
     const q = listQuery.parse(req.query);
@@ -130,6 +145,7 @@ export async function leadRoutes(app: FastifyInstance) {
           : { kind: body.mode };
       const admin = req.user as SessionUser;
       const report = await uploadLeads(app.db, { id: admin.id, name: admin.name }, parsed, mode);
+      for (const a of report.assignment.assigned) notifyAssigned(a.ownerId, a.count);
       return reply.status(200).send(report);
     },
   );
@@ -140,12 +156,16 @@ export async function leadRoutes(app: FastifyInstance) {
     const { ownerId } = assignBody.parse(req.body);
     const admin = req.user as SessionUser;
     const { changed } = await assignLead(app.db, { id: admin.id }, id, ownerId);
-    return { changed, ...(await getLeadDetail(app.db, admin, id)) };
+    const detail = await getLeadDetail(app.db, admin, id);
+    if (changed && ownerId) notifyAssigned(ownerId, 1, detail.lead.name);
+    return { changed, ...detail };
   });
 
   // Admin only. Gives every unassigned open lead to the least-loaded active employee.
   app.post("/auto-assign", { preHandler: app.guard("ADMIN") }, async (req) => {
-    return autoAssignLeads(app.db, { id: (req.user as SessionUser).id });
+    const result = await autoAssignLeads(app.db, { id: (req.user as SessionUser).id });
+    for (const e of result.byEmployee) notifyAssigned(e.ownerId, e.count);
+    return result;
   });
 
   // Lead work: employees only (admins are read-only, rule 4), and only on leads they own (404 otherwise).
