@@ -1,0 +1,34 @@
+# Caddy serves the built web app and forwards the API to the Node process, with automatic HTTPS.
+# Install it as /etc/caddy/Caddyfile and replace leadbook.example.com with your address
+# (a domain pointed at the server, or <elastic-ip-with-dashes>.sslip.io, e.g. 13-232-10-5.sslip.io).
+#
+# The web files are copied to /var/www/leadbook by scripts/deploy-ec2.sh (Caddy cannot read /home).
+leadbook.example.com {
+	encode gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy same-origin
+		-Server
+	}
+
+	# API, health check and the WhatsApp webhook go to the Node process. Caddy replaces any
+	# X-Forwarded-For sent by the client with the real address, which the API's login rate
+	# limiting relies on (TRUST_PROXY=true).
+	@backend path /api/* /health /webhooks/*
+	handle @backend {
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	handle {
+		root * /var/www/leadbook
+		# Hashed build files never change; the page and the service worker must always be re-checked.
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@fresh not path /assets/*
+		header @fresh Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

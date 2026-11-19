@@ -1,5 +1,7 @@
 # Deploying Leadbook
 
+> **Simplest path (personal use):** one EC2 server with pm2, Caddy and a Neon database, no Docker. See [AWS.md](AWS.md). The rest of this page covers the container setup.
+
 Host-neutral: anything that runs containers (a VM with Docker Compose, a container service, Kubernetes) works. Nothing here depends on one provider.
 
 > **Verification status.** The sandbox this was built in has no Docker daemon, so **`docker build` and `docker compose up` have never been run**. What _was_ checked: the compiled API starts under `node dist/index.js`, migrates a fresh database, creates the first admin and signs in; the `pnpm deploy --legacy` bundle used by the image contains production dependencies only and runs (argon2 included); `docker compose config` validates and enforces required variables; the backup and restore scripts work against a real PostgreSQL 16. Do a first build on a staging host before relying on it.
